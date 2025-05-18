@@ -16,6 +16,23 @@ class FunctionDeclaration:
     return f"FunctionDeclaration(name={self.name}, params={self.params}, body={self.body})"
 
 
+class FunctionCall:
+  def __init__(self, name, args):
+    self.name = name
+    self.args = args
+
+  def __repr__(self):
+    return f"FunctionCall(name={self.name}, args={self.args})"
+
+
+class ExpressionStatement:
+  def __init__(self, expression):
+    self.expression = expression
+
+  def __repr__(self):
+    return f"ExpressionStatement(expression={self.expression})"
+
+
 class PrintStatement:
   def __init__(self, expression):
     self.expression = expression

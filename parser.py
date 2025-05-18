@@ -1,4 +1,4 @@
-from ast_nodes import Program, FunctionDeclaration, PrintStatement, Variable, BinaryOperation, Number
+from ast_nodes import Program, FunctionDeclaration, PrintStatement, Variable, BinaryOperation, Number, ExpressionStatement, FunctionCall
 
 
 class Parser:
@@ -35,6 +35,7 @@ class Parser:
       while self.tokens[self.pos].type == "COMMA":
         self.advance_pos()
         param = self.expect("IDENT", "Expected parameter after ','")
+        params.append(param.value)
 
     self.expect("RPAREN", "Expected ')'")
     self.expect("LBRACE", "Expected '{'")
@@ -42,18 +43,23 @@ class Parser:
     body = []
     while self.tokens[self.pos].type != "RBRACE":
       body.append(self.parse_statement())
-      self.advance_pos()
 
     self.expect("RBRACE", "Expected '}'")
     return FunctionDeclaration(func_name.value, params, body)
 
   def parse_statement(self):
-    if self.tokens[self.pos].type == "YELL":
+    tok = self.tokens[self.pos]
+    if tok.type == "YELL":
       self.advance_pos()
       self.expect("LPAREN", "Expected '('")
       expression = self.parse_expression()
       self.expect("RPAREN", "Expected ')' after expression")
+      self.expect("SEMICOLON", "Expected ';' after expression")
       return PrintStatement(expression)
+
+    expression = self.parse_expression()
+    self.expect("SEMICOLON", "Expected ';' after expression")
+    return ExpressionStatement(expression)
 
   def parse_expression(self):
     left = self.parse_primary()
@@ -68,6 +74,18 @@ class Parser:
     tok = self.tokens[self.pos]
     if tok.type == "IDENT":
       self.advance_pos()
+      if self.tokens[self.pos].type == "LPAREN":
+        self.advance_pos()
+        args = []
+        if self.tokens[self.pos].type != "RPAREN":
+          arg = self.parse_expression()
+          args.append(arg)
+          while self.tokens[self.pos].type == "COMMA":
+            self.advance_pos()
+            arg = self.parse_expression()
+            args.append(arg)
+        self.expect("RPAREN", "Expected ')' after function arguments")
+        return FunctionCall(tok.value, args)
       return Variable(tok.value)
     elif tok.type == "NUMBER":
       self.advance_pos()
