@@ -1,9 +1,7 @@
 class Token:
-  def __init__(self, type_, value=None, line=1, column=1):
+  def __init__(self, type_, value=None):
     self.type = type_
     self.value = value
-    self.line = line
-    self.column = column
 
   def __repr__(self):
     if self.value is not None:
@@ -11,10 +9,48 @@ class Token:
     return self.type
 
 
+class Error:
+  def __init__(self, pos_start, pos_end, error_name, details):
+    self.pos_start = pos_start
+    self.pos_end = pos_end
+    self.error_name = error_name
+    self.details = details
+
+  def as_string(self):
+    return f"{self.error_name}: {self.details}\nFile {self.pos_start.file_name}, line {self.pos_start.line + 1}, column {self.pos_start.column + 1}"
+
+
+class IllegalCharError(Error):
+  def __init__(self, pos_start, pos_end, details):
+    super().__init__(pos_start, pos_end, "Illegal Character", details)
+
+
+class Position:
+  def __init__(self, index, line, column, file_name, file_text):
+    self.index = index
+    self.line = line
+    self.column = column
+    self.file_name = file_name
+    self.file_text = file_text
+
+  def advance(self, current_char=None):
+    self.index += 1
+    self.column += 1
+    if current_char == '\n':
+      self.line += 1
+      self.column = 0
+    return self
+
+  def copy(self):
+    return Position(self.index, self.line, self.column, self.file_name, self.file_text)
+
+
 class Lexer:
-  def __init__(self, source):
+  def __init__(self, file_name, source):
     self.source = source
-    self.pos = 0
+    self.pos = Position(-1, 0, -1, file_name, source)
+    self.current_char = None
+    self.advance()
     self.keywords = {
         "fun": "FUN",
         "yell": "YELL",
@@ -36,14 +72,16 @@ class Lexer:
         ',': "COMMA",
     }
 
-  def advance_pos(self):
-    self.pos += 1
+  def advance(self):
+    self.pos.advance(self.source[self.pos.index])
+    self.current_char = self.source[self.pos.index] if self.pos.index < len(
+        self.source) else None
 
   def read_identifier(self):
     identifier = ""
-    while self.pos < len(self.source) and not self.source[self.pos].isspace() and self.source[self.pos] not in self.token_map:
-      identifier += self.source[self.pos]
-      self.advance_pos()
+    while self.current_char is not None and self.current_char.isalnum() and self.current_char not in self.token_map:
+      identifier += self.current_char
+      self.advance()
     if identifier in self.keywords:
       return Token(self.keywords[identifier], identifier)
     else:
@@ -51,40 +89,42 @@ class Lexer:
 
   def read_number(self):
     num = ""
-    while self.pos < len(self.source) and self.source[self.pos].isdigit():
-      num += self.source[self.pos]
-      self.advance_pos()
+    while self.current_char is not None and self.current_char.isdigit():
+      num += self.current_char
+      self.advance()
     return Token("NUMBER", int(num))
 
   def read_string(self):
-    self.advance_pos()
+    self.advance()
     string = ""
-    while self.pos < len(self.source) and self.source[self.pos] != '"':
-      string += self.source[self.pos]
-      self.advance_pos()
-    self.advance_pos()
+    while self.current_char is not None and self.current_char != '"':
+      string += self.current_char
+      self.advance()
+    self.advance()
     return Token("STRING", string)
 
   def tokenizer(self):
     tokens = []
-    while self.pos < len(self.source):
-      char = self.source[self.pos]
+    while self.current_char is not None:
 
-      if char.isspace():
-        self.advance_pos()
+      if self.current_char.isspace():
+        self.advance()
         continue
-      elif char.isalpha():
+      elif self.current_char.isalpha():
         tokens.append(self.read_identifier())
-      elif char.isdigit():
+      elif self.current_char.isdigit():
         tokens.append(self.read_number())
-      elif char == '"':
+      elif self.current_char == '"':
         tokens.append(self.read_string())
+      elif self.current_char in self.token_map:
+        tokens.append(
+            Token(self.token_map[self.current_char], self.current_char))
+        self.advance()
       else:
-        if char in self.token_map:
-          tokens.append(Token(self.token_map[char], char))
-          self.advance_pos()
-        else:
-          raise Exception(f"Unexpected Character: {char}")
+        start = self.pos.copy()
+        illegal_char = self.current_char
+        self.advance()
+        return [], IllegalCharError(start, self.pos.copy(), illegal_char)
 
     tokens.append(Token("EOF"))
-    return tokens
+    return tokens, None
