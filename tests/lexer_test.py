@@ -59,3 +59,12 @@ if error:
   print(error.as_string())
 else:
   print("Tokens:", tokens)
+
+
+unterminated_string = '"fun main() { yell("Hello"); }'
+lexer = Lexer("<stdin>", unterminated_string)
+tokens, error = lexer.tokenizer()
+if error:
+  print(error.as_string())
+else:
+  print("Tokens:", tokens)

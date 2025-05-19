@@ -79,7 +79,7 @@ class Lexer:
 
   def read_identifier(self):
     identifier = ""
-    while self.current_char is not None and self.current_char.isalnum() and self.current_char not in self.token_map:
+    while self.current_char is not None and (self.current_char.isalnum() or self.current_char == '_'):
       identifier += self.current_char
       self.advance()
     if identifier in self.keywords:
@@ -100,6 +100,11 @@ class Lexer:
     while self.current_char is not None and self.current_char != '"':
       string += self.current_char
       self.advance()
+
+    if self.current_char != '"':
+      return IllegalCharError(
+          self.pos.copy(), self.pos.copy(), "Unterminated string literal")
+
     self.advance()
     return Token("STRING", string)
 
@@ -115,16 +120,17 @@ class Lexer:
       elif self.current_char.isdigit():
         tokens.append(self.read_number())
       elif self.current_char == '"':
-        tokens.append(self.read_string())
+        read_string = self.read_string()
+        if isinstance(read_string, IllegalCharError):
+          return [], read_string
+        else:
+          tokens.append(read_string)
       elif self.current_char in self.token_map:
         tokens.append(
             Token(self.token_map[self.current_char], self.current_char))
         self.advance()
       else:
-        start = self.pos.copy()
-        illegal_char = self.current_char
-        self.advance()
-        return [], IllegalCharError(start, self.pos.copy(), illegal_char)
+        return [], IllegalCharError(self.pos.copy(), self.pos.copy(), self.current_char)
 
     tokens.append(Token("EOF"))
     return tokens, None
