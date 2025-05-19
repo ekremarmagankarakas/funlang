@@ -1,10 +1,10 @@
-import lexer
+from run import run as run_shell
 
 while True:
   source = input('funlang > ')
   if source == 'exit':
     break
-  tokens, error = lexer.run('<stdin>', source)
+  tokens, error = run_shell('<stdin>', source)
   if error:
     print(error.as_string())
   else:
