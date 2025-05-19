@@ -134,3 +134,9 @@ class Lexer:
 
     tokens.append(Token("EOF"))
     return tokens, None
+
+
+def run(file_name, source):
+  lexer = Lexer(file_name, source)
+  tokens, error = lexer.tokenizer()
+  return tokens, error
