@@ -67,11 +67,19 @@ class Lexer:
 
   def read_number(self):
     num = ""
+    dot_count = 0
     pos_start = self.pos.copy()
-    while self.current_char is not None and self.current_char.isdigit():
+    while self.current_char is not None and (self.current_char.isdigit() or self.current_char == '.'):
+      if self.current_char == '.':
+        if dot_count == 1:
+          break
+        dot_count += 1
       num += self.current_char
       self.advance()
-    return Token("NUMBER", int(num), pos_start, self.pos)
+    if dot_count == 0:
+      return Token("INT", int(num), pos_start, self.pos)
+    else:
+      return Token("FLOAT", float(num), pos_start, self.pos)
 
   def read_string(self):
     self.advance()
@@ -106,8 +114,9 @@ class Lexer:
         else:
           tokens.append(read_string)
       elif self.current_char in self.token_map:
+        pos_start = self.pos.copy()
         tokens.append(
-            Token(self.token_map[self.current_char], self.current_char))
+            Token(self.token_map[self.current_char], self.current_char, pos_start, self.pos))
         self.advance()
       else:
         return [], IllegalCharError(self.pos.copy(), self.pos.copy(), self.current_char)
