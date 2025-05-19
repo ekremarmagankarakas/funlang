@@ -56,24 +56,27 @@ class Lexer:
 
   def read_identifier(self):
     identifier = ""
+    pos_start = self.pos.copy()
     while self.current_char is not None and (self.current_char.isalnum() or self.current_char == '_'):
       identifier += self.current_char
       self.advance()
     if identifier in self.keywords:
       return Token(self.keywords[identifier], identifier)
     else:
-      return Token("IDENT", identifier)
+      return Token("IDENT", identifier, pos_start, self.pos)
 
   def read_number(self):
     num = ""
+    pos_start = self.pos.copy()
     while self.current_char is not None and self.current_char.isdigit():
       num += self.current_char
       self.advance()
-    return Token("NUMBER", int(num))
+    return Token("NUMBER", int(num), pos_start, self.pos)
 
   def read_string(self):
     self.advance()
     string = ""
+    pos_start = self.pos.copy()
     while self.current_char is not None and self.current_char != '"':
       string += self.current_char
       self.advance()
@@ -83,7 +86,7 @@ class Lexer:
           self.pos.copy(), self.pos.copy(), "Unterminated string literal")
 
     self.advance()
-    return Token("STRING", string)
+    return Token("STRING", string, pos_start, self.pos)
 
   def tokenizer(self):
     tokens = []
