@@ -65,3 +65,12 @@ class BinaryOperation:
 
   def __repr__(self):
     return f"BinaryOperation({self.left} {self.op} {self.right})"
+
+
+class UnaryOperation:
+  def __init__(self, op, right):
+    self.op = op
+    self.right = right
+
+  def __repr__(self):
+    return f"UnaryOperation({self.op} {self.right})"
