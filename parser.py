@@ -1,4 +1,4 @@
-from ast_nodes import Program, FunctionDeclaration, PrintStatement, Variable, BinaryOperation, Number, ExpressionStatement, FunctionCall, UnaryOperation
+from ast_nodes import Program, FunctionDeclarationNode, PrintStatementNode, VariableNode, BinaryOperationNode, NumberNode, ExpressionStatementNode, FunctionCallNode, UnaryOperationNode
 from error import IllegalSyntaxError
 
 
@@ -101,7 +101,7 @@ class Parser:
     if (err := self.expect("RBRACE", "Expected '}'")) and isinstance(err, IllegalSyntaxError):
       return res.failure(err)
 
-    return res.success(FunctionDeclaration(func_name.value, params, body))
+    return res.success(FunctionDeclarationNode(func_name.value, params, body))
 
   def parse_statement(self):
     res = ParseResult()
@@ -116,14 +116,14 @@ class Parser:
         return res.failure(err)
       if (err := self.expect("SEMICOLON", "Expected ';' after expression")) and isinstance(err, IllegalSyntaxError):
         return res.failure(err)
-      return res.success(PrintStatement(expr))
+      return res.success(PrintStatementNode(expr))
 
     expr = res.register(self.parse_expression())
     if res.error:
       return res
     if (err := self.expect("SEMICOLON", "Expected ';' after expression")) and isinstance(err, IllegalSyntaxError):
       return res.failure(err)
-    return res.success(ExpressionStatement(expr))
+    return res.success(ExpressionStatementNode(expr))
 
   def parse_expression(self):
     res = ParseResult()
@@ -131,12 +131,12 @@ class Parser:
     if res.error:
       return res
     while self.current_token and self.current_token.type in ("PLUS", "MINUS"):
-      op = self.current_token.value
+      op = self.current_token
       self.advance()
       right = res.register(self.parse_term())
       if res.error:
         return res
-      left = BinaryOperation(left, op, right)
+      left = BinaryOperationNode(left, op, right)
     return res.success(left)
 
   def parse_term(self):
@@ -145,22 +145,23 @@ class Parser:
     if res.error:
       return res
     while self.current_token and self.current_token.type in ("MULTIPLY", "DIVIDE"):
-      op = self.current_token.value
+      op = self.current_token
       self.advance()
       right = res.register(self.parse_factor())
       if res.error:
         return res
-      left = BinaryOperation(left, op, right)
+      left = BinaryOperationNode(left, op, right)
     return res.success(left)
 
   def parse_factor(self):
     res = ParseResult()
     if self.current_token.type == "MINUS":
+      op = self.current_token
       self.advance()
       right = res.register(self.parse_factor())
       if res.error:
         return res
-      return res.success(UnaryOperation("-", right))
+      return res.success(UnaryOperationNode(op, right))
     return res.register(self.parse_primary()) or res
 
   def parse_primary(self):
@@ -184,9 +185,9 @@ class Parser:
             args.append(arg)
         if (err := self.expect("RPAREN", "Expected ')' after function arguments")) and isinstance(err, IllegalSyntaxError):
           return res.failure(err)
-        return res.success(FunctionCall(tok.value, args))
-      return res.success(Variable(tok.value))
+        return res.success(FunctionCallNode(tok.value, args))
+      return res.success(VariableNode(tok.value))
     elif tok.type in ("INT", "FLOAT"):
       self.advance()
-      return res.success(Number(tok.value))
+      return res.success(NumberNode(tok))
     return res.failure(IllegalSyntaxError(tok.pos_start, tok.pos_end, f"Unexpected token: {tok.type}"))

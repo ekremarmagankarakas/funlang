@@ -6,7 +6,7 @@ class Program:
     return f"Program(functions={self.functions})"
 
 
-class FunctionDeclaration:
+class FunctionDeclarationNode:
   def __init__(self, name, params, body):
     self.name = name
     self.params = params
@@ -16,7 +16,7 @@ class FunctionDeclaration:
     return f"FunctionDeclaration(name={self.name}, params={self.params}, body={self.body})"
 
 
-class FunctionCall:
+class FunctionCallNode:
   def __init__(self, name, args):
     self.name = name
     self.args = args
@@ -25,7 +25,7 @@ class FunctionCall:
     return f"FunctionCall(name={self.name}, args={self.args})"
 
 
-class ExpressionStatement:
+class ExpressionStatementNode:
   def __init__(self, expression):
     self.expression = expression
 
@@ -33,7 +33,7 @@ class ExpressionStatement:
     return f"ExpressionStatement(expression={self.expression})"
 
 
-class PrintStatement:
+class PrintStatementNode:
   def __init__(self, expression):
     self.expression = expression
 
@@ -41,7 +41,7 @@ class PrintStatement:
     return f"PrintStatement(expression={self.expression})"
 
 
-class Variable:
+class VariableNode:
   def __init__(self, name):
     self.name = name
 
@@ -49,28 +49,37 @@ class Variable:
     return f"Variable(name={self.name})"
 
 
-class Number:
-  def __init__(self, value):
-    self.value = value
+class NumberNode:
+  def __init__(self, tok):
+    self.tok = tok
+
+    self.pos_start = tok.pos_start
+    self.pos_end = tok.pos_end
 
   def __repr__(self):
-    return f"Number(value={self.value})"
+    return f"Number(value={self.tok})"
 
 
-class BinaryOperation:
+class BinaryOperationNode:
   def __init__(self, left, op, right):
     self.left = left
     self.op = op
     self.right = right
 
+    self.pos_start = left.pos_start
+    self.pos_end = right.pos_end
+
   def __repr__(self):
     return f"BinaryOperation({self.left} {self.op} {self.right})"
 
 
-class UnaryOperation:
+class UnaryOperationNode:
   def __init__(self, op, right):
     self.op = op
     self.right = right
+
+    self.pos_start = op.pos_start
+    self.pos_end = right.pos_end
 
   def __repr__(self):
     return f"UnaryOperation({self.op} {self.right})"
