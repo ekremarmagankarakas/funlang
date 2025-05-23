@@ -7,9 +7,8 @@ def run(file_name, source):
   tokens, error = lexer.tokenizer()
   if error:
     return None, None, error
-  # return tokens, None
 
   parser = Parser(tokens)
-  ast = parser.parse()
+  result = parser.parse()
 
-  return ast, tokens, None
+  return result.node, tokens, result.error

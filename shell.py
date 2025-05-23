@@ -4,7 +4,9 @@ while True:
   source = input('funlang > ')
   if source == 'exit':
     break
+
   ast, tokens, error = run_shell('<stdin>', source)
+
   if error:
     print(error.as_string())
   else:

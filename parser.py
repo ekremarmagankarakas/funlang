@@ -1,4 +1,26 @@
 from ast_nodes import Program, FunctionDeclaration, PrintStatement, Variable, BinaryOperation, Number, ExpressionStatement, FunctionCall, UnaryOperation
+from error import IllegalSyntaxError
+
+
+class ParseResult:
+  def __init__(self):
+    self.error = None
+    self.node = None
+
+  def register(self, res):
+    if isinstance(res, ParseResult):
+      if res.error:
+        self.error = res.error
+      return res.node
+    return res
+
+  def success(self, node):
+    self.node = node
+    return self
+
+  def failure(self, error):
+    self.error = error
+    return self
 
 
 class Parser:
@@ -20,82 +42,129 @@ class Parser:
       tok = self.current_token
       self.advance()
       return tok
-    raise SyntaxError(f"{error_msg} at token {self.current_token}")
+    return IllegalSyntaxError(self.current_token.pos_start, self.current_token.pos_end, error_msg)
 
   def parse(self):
+    res = ParseResult()
     if self.current_token.type == "FUN":
       functions = []
       while self.current_token.type != "EOF":
-        functions.append(self.parse_function())
-      return Program(functions)
+        func = res.register(self.parse_function())
+        if res.error:
+          return res
+        functions.append(func)
+      return res.success(Program(functions))
     else:
-      return self.parse_expression()
+      expr = res.register(self.parse_expression())
+      if res.error:
+        return res
+      return res.success(expr)
 
   def parse_function(self):
-    self.expect("FUN", "Expected 'fun' keyword")
+    res = ParseResult()
+    if (err := self.expect("FUN", "Expected 'fun' keyword")) and isinstance(err, IllegalSyntaxError):
+      return res.failure(err)
     func_name = self.expect("IDENT", "Expected function name")
-    self.expect("LPAREN", "Expected '('")
-    params = []
+    if isinstance(func_name, IllegalSyntaxError):
+      return res.failure(func_name)
 
+    if (err := self.expect("LPAREN", "Expected '('")) and isinstance(err, IllegalSyntaxError):
+      return res.failure(err)
+
+    params = []
     if self.current_token.type != "RPAREN":
-      param = self.expect("IDENT", "Expected parameter")
-      params.append(param.value)
+      ident = self.expect("IDENT", "Expected parameter")
+      if isinstance(ident, IllegalSyntaxError):
+        return res.failure(ident)
+      params.append(ident.value)
 
       while self.current_token.type == "COMMA":
         self.advance()
-        param = self.expect("IDENT", "Expected parameter after ','")
-        params.append(param.value)
+        ident = self.expect("IDENT", "Expected parameter after ','")
+        if isinstance(ident, IllegalSyntaxError):
+          return res.failure(ident)
+        params.append(ident.value)
 
-    self.expect("RPAREN", "Expected ')'")
-    self.expect("LBRACE", "Expected '{'")
+    if (err := self.expect("RPAREN", "Expected ')'")) and isinstance(err, IllegalSyntaxError):
+      return res.failure(err)
+
+    if (err := self.expect("LBRACE", "Expected '{'")) and isinstance(err, IllegalSyntaxError):
+      return res.failure(err)
 
     body = []
     while self.current_token.type != "RBRACE":
-      body.append(self.parse_statement())
+      stmt = res.register(self.parse_statement())
+      if res.error:
+        return res
+      body.append(stmt)
 
-    self.expect("RBRACE", "Expected '}'")
-    return FunctionDeclaration(func_name.value, params, body)
+    if (err := self.expect("RBRACE", "Expected '}'")) and isinstance(err, IllegalSyntaxError):
+      return res.failure(err)
+
+    return res.success(FunctionDeclaration(func_name.value, params, body))
 
   def parse_statement(self):
-    tok = self.current_token
-    if tok.type == "YELL":
+    res = ParseResult()
+    if self.current_token.type == "YELL":
       self.advance()
-      self.expect("LPAREN", "Expected '('")
-      expression = self.parse_expression()
-      self.expect("RPAREN", "Expected ')' after expression")
-      self.expect("SEMICOLON", "Expected ';' after expression")
-      return PrintStatement(expression)
+      if (err := self.expect("LPAREN", "Expected '('")) and isinstance(err, IllegalSyntaxError):
+        return res.failure(err)
+      expr = res.register(self.parse_expression())
+      if res.error:
+        return res
+      if (err := self.expect("RPAREN", "Expected ')' after expression")) and isinstance(err, IllegalSyntaxError):
+        return res.failure(err)
+      if (err := self.expect("SEMICOLON", "Expected ';' after expression")) and isinstance(err, IllegalSyntaxError):
+        return res.failure(err)
+      return res.success(PrintStatement(expr))
 
-    expression = self.parse_expression()
-    self.expect("SEMICOLON", "Expected ';' after expression")
-    return ExpressionStatement(expression)
+    expr = res.register(self.parse_expression())
+    if res.error:
+      return res
+    if (err := self.expect("SEMICOLON", "Expected ';' after expression")) and isinstance(err, IllegalSyntaxError):
+      return res.failure(err)
+    return res.success(ExpressionStatement(expr))
 
   def parse_expression(self):
-    left = self.parse_term()
-    while self.current_token.type in ("PLUS", "MINUS"):
+    res = ParseResult()
+    left = res.register(self.parse_term())
+    if res.error:
+      return res
+    while self.current_token and self.current_token.type in ("PLUS", "MINUS"):
       op = self.current_token.value
       self.advance()
-      right = self.parse_term()
+      right = res.register(self.parse_term())
+      if res.error:
+        return res
       left = BinaryOperation(left, op, right)
-    return left
+    return res.success(left)
 
   def parse_term(self):
-    left = self.parse_factor()
-    while self.current_token.type in ("MULTIPLY", "DIVIDE"):
+    res = ParseResult()
+    left = res.register(self.parse_factor())
+    if res.error:
+      return res
+    while self.current_token and self.current_token.type in ("MULTIPLY", "DIVIDE"):
       op = self.current_token.value
       self.advance()
-      right = self.parse_factor()
+      right = res.register(self.parse_factor())
+      if res.error:
+        return res
       left = BinaryOperation(left, op, right)
-    return left
+    return res.success(left)
 
   def parse_factor(self):
+    res = ParseResult()
     if self.current_token.type == "MINUS":
       self.advance()
-      right = self.parse_factor()
-      return UnaryOperation("-", right)
-    return self.parse_primary()
+      right = res.register(self.parse_factor())
+      if res.error:
+        return res
+      return res.success(UnaryOperation("-", right))
+    return res.register(self.parse_primary()) or res
 
   def parse_primary(self):
+    res = ParseResult()
     tok = self.current_token
     if tok.type == "IDENT":
       self.advance()
@@ -103,17 +172,21 @@ class Parser:
         self.advance()
         args = []
         if self.current_token.type != "RPAREN":
-          arg = self.parse_expression()
+          arg = res.register(self.parse_expression())
+          if res.error:
+            return res
           args.append(arg)
           while self.current_token.type == "COMMA":
             self.advance()
-            arg = self.parse_expression()
+            arg = res.register(self.parse_expression())
+            if res.error:
+              return res
             args.append(arg)
-        self.expect("RPAREN", "Expected ')' after function arguments")
-        return FunctionCall(tok.value, args)
-      return Variable(tok.value)
-    elif tok.type == "INT" or tok.type == "FLOAT":
+        if (err := self.expect("RPAREN", "Expected ')' after function arguments")) and isinstance(err, IllegalSyntaxError):
+          return res.failure(err)
+        return res.success(FunctionCall(tok.value, args))
+      return res.success(Variable(tok.value))
+    elif tok.type in ("INT", "FLOAT"):
       self.advance()
-      return Number(tok.value)
-    else:
-      raise SyntaxError(f"Unexpected type encountered: {tok.type}")
+      return res.success(Number(tok.value))
+    return res.failure(IllegalSyntaxError(tok.pos_start, tok.pos_end, f"Unexpected token: {tok.type}"))
