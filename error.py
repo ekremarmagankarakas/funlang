@@ -19,6 +19,6 @@ class IllegalSyntaxError(Error):
     super().__init__(pos_start, pos_end, "Illegal Syntax", details)
 
 
-class DivisionByZeroError(Error):
-  def __init__(self, pos_start, pos_end):
-    super().__init__(pos_start, pos_end, "Division by Zero", "You can't divide by zero!")
+class RuntimeError(Error):
+  def __init__(self, pos_start, pos_end, details):
+    super().__init__(pos_start, pos_end, "Runtime Error", details)

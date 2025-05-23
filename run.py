@@ -16,7 +16,5 @@ def run(file_name, source):
 
   interpreter = Interpreter()
   result = interpreter.visit(ast.node)
-  # if result.error:
-  #  return None, None, None, result.error
 
-  return result, ast.node, tokens, None
+  return result.value, ast.node, tokens, result.error

@@ -1,4 +1,4 @@
-from error import DivisionByZeroError
+from error import RuntimeError
 
 
 class Number:
@@ -13,28 +13,50 @@ class Number:
 
   def added_to(self, other):
     if isinstance(other, Number):
-      return Number(self.value + other.value)
+      return Number(self.value + other.value), None
     return None
 
   def subtracted_by(self, other):
     if isinstance(other, Number):
-      return Number(self.value - other.value)
+      return Number(self.value - other.value), None
     return None
 
   def multiplied_by(self, other):
     if isinstance(other, Number):
-      return Number(self.value * other.value)
+      return Number(self.value * other.value), None
     return None
 
   def divided_by(self, other):
     if isinstance(other, Number):
       if other.value == 0:
-        return None
-      return Number(self.value / other.value)
+        return None, RuntimeError(
+            self.pos_start, other.pos_end,
+            "Division by zero",
+        )
+      return Number(self.value / other.value), None
     return None
 
   def __repr__(self):
     return f"Number({self.value})"
+
+
+class InterpreterResult:
+  def __init__(self):
+    self.value = None
+    self.error = None
+
+  def register(self, res):
+    if res.error:
+      self.error = res.error
+    return res.value
+
+  def success(self, value):
+    self.value = value
+    return self
+
+  def failure(self, error):
+    self.error = error
+    return self
 
 
 class Interpreter:
@@ -47,30 +69,48 @@ class Interpreter:
     raise Exception('No visit_{} method'.format(type(node).__name__))
 
   def visit_NumberNode(self, node):
-    return Number(node.tok.value).set_pos(node.pos_start, node.pos_end)
+    return InterpreterResult().success(
+        Number(node.tok.value).set_pos(node.pos_start, node.pos_end)
+    )
 
   def visit_BinaryOperationNode(self, node):
-    left = self.visit(node.left)
-    right = self.visit(node.right)
+    res = InterpreterResult()
+    left = res.register(self.visit(node.left))
+    if res.error:
+      return res
+    right = res.register(self.visit(node.right))
+    if res.error:
+      return res
 
     if isinstance(left, Number) and isinstance(right, Number):
       if node.op.type == 'PLUS':
-        return left.added_to(right)
+        result, error = left.added_to(right)
       elif node.op.type == 'MINUS':
-        return left.subtracted_by(right)
+        result, error = left.subtracted_by(right)
       elif node.op.type == 'MULTIPLY':
-        return left.multiplied_by(right)
+        result, error = left.multiplied_by(right)
       elif node.op.type == 'DIVIDE':
-        result = left.divided_by(right)
-        if result is None:
-          return DivisionByZeroError(
-              node.pos_start, node.pos_end, "Division by zero")
-        return result.set_pos(node.pos_start, node.pos_end)
+        result, error = left.divided_by(right)
+
+      if error:
+        return res.failure(error)
+      else:
+        return res.success(result.set_pos(node.pos_start, node.pos_end))
     return None
 
   def visit_UnaryOperationNode(self, node):
-    right = self.visit(node.right)
+    res = InterpreterResult()
+    right = res.register(self.visit(node.right))
+    if res.error:
+      return res
+    error = None
     if isinstance(right, Number):
       if node.op.type == 'MINUS':
-        return Number(-right.value).set_pos(node.pos_start, node.pos_end)
+        number, error = right.multiplied_by(Number(-1))
+      elif node.op.type == 'PLUS':
+        number, error = right.added_to(Number(0))
+      if error:
+        return res.failure(error)
+      else:
+        return res.success(number.set_pos(node.pos_start, node.pos_end))
     return None
