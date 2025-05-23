@@ -155,13 +155,21 @@ class Parser:
 
   def parse_factor(self):
     res = ParseResult()
-    if self.current_token.type == "MINUS":
+    if self.current_token.type in ("PLUS", "MINUS"):
       op = self.current_token
       self.advance()
       right = res.register(self.parse_factor())
       if res.error:
         return res
       return res.success(UnaryOperationNode(op, right))
+    elif self.current_token.type == "LPAREN":
+      self.advance()
+      expr = res.register(self.parse_expression())
+      if res.error:
+        return res
+      if (err := self.expect("RPAREN", "Expected ')'")) and isinstance(err, IllegalSyntaxError):
+        return res.failure(err)
+      return res.success(expr)
     return res.register(self.parse_primary()) or res
 
   def parse_primary(self):
