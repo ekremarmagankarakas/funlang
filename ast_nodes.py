@@ -41,12 +41,27 @@ class PrintStatementNode:
     return f"PrintStatement(expression={self.expression})"
 
 
-class VariableNode:
-  def __init__(self, name):
-    self.name = name
+class VariableDeclarationNode:
+  def __init__(self, tok, value):
+    self.tok = tok
+    self.value = value
+
+    self.pos_start = tok.pos_start
+    self.pos_end = tok.pos_end
 
   def __repr__(self):
-    return f"Variable(name={self.name})"
+    return f"VariableDeclaration(name={self.tok.value}, value={self.value})"
+
+
+class VariableAccessNode:
+  def __init__(self, tok):
+    self.tok = tok
+
+    self.pos_start = tok.pos_start
+    self.pos_end = tok.pos_end
+
+  def __repr__(self):
+    return f"VariableAccess(name={self.tok.value})"
 
 
 class NumberNode:

@@ -33,6 +33,7 @@ class Lexer:
         "yell": "YELL",
         "doubt": "DOUBT",
         "maybe": "MAYBE",
+        "var": "VAR",
     }
     self.token_map = {
         '+': "PLUS",
@@ -48,6 +49,7 @@ class Lexer:
         ']': "RBRACKET",
         ';': "SEMICOLON",
         ',': "COMMA",
+        '=': "EQUALS",
     }
 
   def advance(self):

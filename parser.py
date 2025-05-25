@@ -1,4 +1,4 @@
-from ast_nodes import Program, FunctionDeclarationNode, PrintStatementNode, VariableNode, BinaryOperationNode, NumberNode, ExpressionStatementNode, FunctionCallNode, UnaryOperationNode
+from ast_nodes import Program, FunctionDeclarationNode, PrintStatementNode, VariableAccessNode, VariableDeclarationNode, BinaryOperationNode, NumberNode, ExpressionStatementNode, FunctionCallNode, UnaryOperationNode
 from error import IllegalSyntaxError
 
 
@@ -127,6 +127,19 @@ class Parser:
 
   def parse_expression(self):
     res = ParseResult()
+    if self.current_token.type == "VAR":
+      self.advance()
+      var_name = self.current_token
+      if (err := self.expect("IDENT", "Expected 'IDENT' after variable declaration")) and isinstance(err, IllegalSyntaxError):
+        return res.failure(err)
+      if (err := self.expect("EQUALS", "Expected '=' after variable name")) and isinstance(err, IllegalSyntaxError):
+        return res.failure(err)
+      expr = res.register(self.parse_expression())
+      if res.error:
+        return res
+
+      return res.success(VariableDeclarationNode(var_name, expr))
+
     left = res.register(self.parse_term())
     if res.error:
       return res
@@ -180,10 +193,13 @@ class Parser:
 
   def parse_atom(self):
     res = ParseResult()
+    tok = self.current_token
     if self.current_token.type in ("INT", "FLOAT"):
-      tok = self.current_token
       self.advance()
       return res.success(NumberNode(tok))
+    elif self.current_token.type == "IDENT":
+      self.advance()
+      return res.success(VariableAccessNode(tok))
     elif self.current_token.type == "LPAREN":
       self.advance()
       expr = res.register(self.parse_expression())
@@ -193,31 +209,3 @@ class Parser:
         return res.failure(err)
       return res.success(expr)
     return res.failure(IllegalSyntaxError(self.current_token.pos_start, self.current_token.pos_end, f"Unexpected token: {self.current_token.type}"))
-
-  def parse_primary(self):
-    res = ParseResult()
-    tok = self.current_token
-    if tok.type == "IDENT":
-      self.advance()
-      if self.current_token.type == "LPAREN":
-        self.advance()
-        args = []
-        if self.current_token.type != "RPAREN":
-          arg = res.register(self.parse_expression())
-          if res.error:
-            return res
-          args.append(arg)
-          while self.current_token.type == "COMMA":
-            self.advance()
-            arg = res.register(self.parse_expression())
-            if res.error:
-              return res
-            args.append(arg)
-        if (err := self.expect("RPAREN", "Expected ')' after function arguments")) and isinstance(err, IllegalSyntaxError):
-          return res.failure(err)
-        return res.success(FunctionCallNode(tok.value, args))
-      return res.success(VariableNode(tok.value))
-    elif tok.type in ("INT", "FLOAT"):
-      self.advance()
-      return res.success(NumberNode(tok))
-    return res.failure(IllegalSyntaxError(tok.pos_start, tok.pos_end, f"Unexpected token: {tok.type}"))
