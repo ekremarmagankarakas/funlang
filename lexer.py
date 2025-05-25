@@ -1,5 +1,5 @@
 from error import IllegalCharError
-from token import Token
+from token import Token, KEYWORDS, SYMBOLS, TT_EOF, TT_INT, TT_FLOAT, TT_STRING, TT_IDENT, TT_PLUS, TT_MINUS, TT_MULTIPLY, TT_DIVIDE, TT_POWER, TT_LPAREN, TT_RPAREN, TT_LBRACE, TT_RBRACE, TT_LBRACKET, TT_RBRACKET, TT_COMMA, TT_SEMICOLON, TT_EQUALS
 
 
 class Position:
@@ -28,29 +28,6 @@ class Lexer:
     self.pos = Position(-1, 0, -1, file_name, source)
     self.current_char = None
     self.advance()
-    self.keywords = {
-        "fun": "FUN",
-        "yell": "YELL",
-        "doubt": "DOUBT",
-        "maybe": "MAYBE",
-        "var": "VAR",
-    }
-    self.token_map = {
-        '+': "PLUS",
-        '-': "MINUS",
-        '*': "MULTIPLY",
-        '/': "DIVIDE",
-        '^': "POWER",
-        '(': "LPAREN",
-        ')': "RPAREN",
-        '{': "LBRACE",
-        '}': "RBRACE",
-        '[': "LBRACKET",
-        ']': "RBRACKET",
-        ';': "SEMICOLON",
-        ',': "COMMA",
-        '=': "EQUALS",
-    }
 
   def advance(self):
     self.pos.advance(self.source[self.pos.index])
@@ -63,10 +40,10 @@ class Lexer:
     while self.current_char is not None and (self.current_char.isalnum() or self.current_char == '_'):
       identifier += self.current_char
       self.advance()
-    if identifier in self.keywords:
-      return Token(self.keywords[identifier], identifier)
+    if identifier in KEYWORDS:
+      return Token(KEYWORDS[identifier], identifier)
     else:
-      return Token("IDENT", identifier, pos_start, self.pos)
+      return Token(TT_IDENT, identifier, pos_start, self.pos)
 
   def read_number(self):
     num = ""
@@ -80,9 +57,9 @@ class Lexer:
       num += self.current_char
       self.advance()
     if dot_count == 0:
-      return Token("INT", int(num), pos_start, self.pos)
+      return Token(TT_INT, int(num), pos_start, self.pos)
     else:
-      return Token("FLOAT", float(num), pos_start, self.pos)
+      return Token(TT_FLOAT, float(num), pos_start, self.pos)
 
   def read_string(self):
     self.advance()
@@ -97,7 +74,7 @@ class Lexer:
           self.pos.copy(), self.pos.copy(), "Unterminated string literal")
 
     self.advance()
-    return Token("STRING", string, pos_start, self.pos)
+    return Token(TT_STRING, string, pos_start, self.pos)
 
   def tokenizer(self):
     tokens = []
@@ -116,13 +93,13 @@ class Lexer:
           return [], read_string
         else:
           tokens.append(read_string)
-      elif self.current_char in self.token_map:
+      elif self.current_char in SYMBOLS:
         pos_start = self.pos.copy()
         tokens.append(
-            Token(self.token_map[self.current_char], self.current_char, pos_start, self.pos))
+            Token(SYMBOLS[self.current_char], self.current_char, pos_start, self.pos))
         self.advance()
       else:
         return [], IllegalCharError(self.pos.copy(), self.pos.copy(), self.current_char)
 
-    tokens.append(Token("EOF"))
+    tokens.append(Token(TT_EOF))
     return tokens, None

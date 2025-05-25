@@ -1,4 +1,5 @@
 from error import RuntimeError
+from token import Token, KEYWORDS, SYMBOLS, TT_EOF, TT_INT, TT_FLOAT, TT_STRING, TT_IDENT, TT_PLUS, TT_MINUS, TT_MULTIPLY, TT_DIVIDE, TT_POWER, TT_LPAREN, TT_RPAREN, TT_LBRACE, TT_RBRACE, TT_LBRACKET, TT_RBRACKET, TT_COMMA, TT_SEMICOLON, TT_EQUALS, TK_FUN, TK_YELL, TK_DOUBT, TK_MAYBE, TK_VAR
 
 
 class Number:
@@ -148,15 +149,15 @@ class Interpreter:
       return res
 
     if isinstance(left, Number) and isinstance(right, Number):
-      if node.op.type == 'PLUS':
+      if node.op.type == TT_PLUS:
         result, error = left.added_to(right)
-      elif node.op.type == 'MINUS':
+      elif node.op.type == TT_MINUS:
         result, error = left.subtracted_by(right)
-      elif node.op.type == 'MULTIPLY':
+      elif node.op.type == TT_MULTIPLY:
         result, error = left.multiplied_by(right)
-      elif node.op.type == 'DIVIDE':
+      elif node.op.type == TT_DIVIDE:
         result, error = left.divided_by(right)
-      elif node.op.type == 'POWER':
+      elif node.op.type == TT_POWER:
         result, error = left.powered_by(right)
 
       if error:
@@ -172,9 +173,9 @@ class Interpreter:
       return res
     error = None
     if isinstance(right, Number):
-      if node.op.type == 'MINUS':
+      if node.op.type == TT_MINUS:
         number, error = right.multiplied_by(Number(-1))
-      elif node.op.type == 'PLUS':
+      elif node.op.type == TT_PLUS:
         number, error = right.added_to(Number(0))
       if error:
         return res.failure(error)

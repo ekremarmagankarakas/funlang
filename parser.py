@@ -1,4 +1,5 @@
 from ast_nodes import Program, FunctionDeclarationNode, PrintStatementNode, VariableAccessNode, VariableDeclarationNode, BinaryOperationNode, NumberNode, ExpressionStatementNode, FunctionCallNode, UnaryOperationNode
+from token import Token, KEYWORDS, SYMBOLS, TT_EOF, TT_INT, TT_FLOAT, TT_STRING, TT_IDENT, TT_PLUS, TT_MINUS, TT_MULTIPLY, TT_DIVIDE, TT_POWER, TT_LPAREN, TT_RPAREN, TT_LBRACE, TT_RBRACE, TT_LBRACKET, TT_RBRACKET, TT_COMMA, TT_SEMICOLON, TT_EQUALS, TK_FUN, TK_YELL, TK_DOUBT, TK_MAYBE, TK_VAR
 from error import IllegalSyntaxError
 
 
@@ -46,9 +47,9 @@ class Parser:
 
   def parse(self):
     res = ParseResult()
-    if self.current_token.type == "FUN":
+    if self.current_token.type == TK_FUN:
       functions = []
-      while self.current_token.type != "EOF":
+      while self.current_token.type != TT_EOF:
         func = res.register(self.parse_function())
         if res.error:
           return res
@@ -62,77 +63,77 @@ class Parser:
 
   def parse_function(self):
     res = ParseResult()
-    if (err := self.expect("FUN", "Expected 'fun' keyword")) and isinstance(err, IllegalSyntaxError):
+    if (err := self.expect(TK_FUN, "Expected 'fun' keyword")) and isinstance(err, IllegalSyntaxError):
       return res.failure(err)
-    func_name = self.expect("IDENT", "Expected function name")
+    func_name = self.expect(TT_IDENT, "Expected function name")
     if isinstance(func_name, IllegalSyntaxError):
       return res.failure(func_name)
 
-    if (err := self.expect("LPAREN", "Expected '('")) and isinstance(err, IllegalSyntaxError):
+    if (err := self.expect(TT_LPAREN, "Expected '('")) and isinstance(err, IllegalSyntaxError):
       return res.failure(err)
 
     params = []
-    if self.current_token.type != "RPAREN":
-      ident = self.expect("IDENT", "Expected parameter")
+    if self.current_token.type != TT_RPAREN:
+      ident = self.expect(TT_IDENT, "Expected parameter")
       if isinstance(ident, IllegalSyntaxError):
         return res.failure(ident)
       params.append(ident.value)
 
-      while self.current_token.type == "COMMA":
+      while self.current_token.type == TT_COMMA:
         self.advance()
-        ident = self.expect("IDENT", "Expected parameter after ','")
+        ident = self.expect(TT_IDENT, "Expected parameter after ','")
         if isinstance(ident, IllegalSyntaxError):
           return res.failure(ident)
         params.append(ident.value)
 
-    if (err := self.expect("RPAREN", "Expected ')'")) and isinstance(err, IllegalSyntaxError):
+    if (err := self.expect(TT_RPAREN, "Expected ')'")) and isinstance(err, IllegalSyntaxError):
       return res.failure(err)
 
-    if (err := self.expect("LBRACE", "Expected '{'")) and isinstance(err, IllegalSyntaxError):
+    if (err := self.expect(TT_LBRACE, "Expected '{'")) and isinstance(err, IllegalSyntaxError):
       return res.failure(err)
 
     body = []
-    while self.current_token.type != "RBRACE":
+    while self.current_token.type != TT_RBRACE:
       stmt = res.register(self.parse_statement())
       if res.error:
         return res
       body.append(stmt)
 
-    if (err := self.expect("RBRACE", "Expected '}'")) and isinstance(err, IllegalSyntaxError):
+    if (err := self.expect(TT_RBRACE, "Expected '}'")) and isinstance(err, IllegalSyntaxError):
       return res.failure(err)
 
     return res.success(FunctionDeclarationNode(func_name.value, params, body))
 
   def parse_statement(self):
     res = ParseResult()
-    if self.current_token.type == "YELL":
+    if self.current_token.type == TK_YELL:
       self.advance()
-      if (err := self.expect("LPAREN", "Expected '('")) and isinstance(err, IllegalSyntaxError):
+      if (err := self.expect(TT_LPAREN, "Expected '('")) and isinstance(err, IllegalSyntaxError):
         return res.failure(err)
       expr = res.register(self.parse_expression())
       if res.error:
         return res
-      if (err := self.expect("RPAREN", "Expected ')' after expression")) and isinstance(err, IllegalSyntaxError):
+      if (err := self.expect(TT_RPAREN, "Expected ')' after expression")) and isinstance(err, IllegalSyntaxError):
         return res.failure(err)
-      if (err := self.expect("SEMICOLON", "Expected ';' after expression")) and isinstance(err, IllegalSyntaxError):
+      if (err := self.expect(TT_SEMICOLON, "Expected ';' after expression")) and isinstance(err, IllegalSyntaxError):
         return res.failure(err)
       return res.success(PrintStatementNode(expr))
 
     expr = res.register(self.parse_expression())
     if res.error:
       return res
-    if (err := self.expect("SEMICOLON", "Expected ';' after expression")) and isinstance(err, IllegalSyntaxError):
+    if (err := self.expect(TT_SEMICOLON, "Expected ';' after expression")) and isinstance(err, IllegalSyntaxError):
       return res.failure(err)
     return res.success(ExpressionStatementNode(expr))
 
   def parse_expression(self):
     res = ParseResult()
-    if self.current_token.type == "VAR":
+    if self.current_token.type == TK_VAR:
       self.advance()
       var_name = self.current_token
-      if (err := self.expect("IDENT", "Expected 'IDENT' after variable declaration")) and isinstance(err, IllegalSyntaxError):
+      if (err := self.expect(TT_IDENT, "Expected 'IDENT' after variable declaration")) and isinstance(err, IllegalSyntaxError):
         return res.failure(err)
-      if (err := self.expect("EQUALS", "Expected '=' after variable name")) and isinstance(err, IllegalSyntaxError):
+      if (err := self.expect(TT_EQUALS, "Expected '=' after variable name")) and isinstance(err, IllegalSyntaxError):
         return res.failure(err)
       expr = res.register(self.parse_expression())
       if res.error:
@@ -143,7 +144,7 @@ class Parser:
     left = res.register(self.parse_term())
     if res.error:
       return res
-    while self.current_token and self.current_token.type in ("PLUS", "MINUS"):
+    while self.current_token and self.current_token.type in (TT_PLUS, TT_MINUS):
       op = self.current_token
       self.advance()
       right = res.register(self.parse_term())
@@ -157,7 +158,7 @@ class Parser:
     left = res.register(self.parse_factor())
     if res.error:
       return res
-    while self.current_token and self.current_token.type in ("MULTIPLY", "DIVIDE"):
+    while self.current_token and self.current_token.type in (TT_MULTIPLY, TT_DIVIDE):
       op = self.current_token
       self.advance()
       right = res.register(self.parse_factor())
@@ -168,7 +169,7 @@ class Parser:
 
   def parse_factor(self):
     res = ParseResult()
-    if self.current_token.type in ("PLUS", "MINUS"):
+    if self.current_token.type in (TT_PLUS, TT_MINUS):
       op = self.current_token
       self.advance()
       right = res.register(self.parse_factor())
@@ -182,7 +183,7 @@ class Parser:
     left = res.register(self.parse_atom())
     if res.error:
       return res
-    while self.current_token and self.current_token.type == "POWER":
+    while self.current_token and self.current_token.type == TT_POWER:
       op = self.current_token
       self.advance()
       right = res.register(self.parse_factor())
@@ -194,18 +195,18 @@ class Parser:
   def parse_atom(self):
     res = ParseResult()
     tok = self.current_token
-    if self.current_token.type in ("INT", "FLOAT"):
+    if self.current_token.type in (TT_INT, TT_FLOAT):
       self.advance()
       return res.success(NumberNode(tok))
-    elif self.current_token.type == "IDENT":
+    elif self.current_token.type == TT_IDENT:
       self.advance()
       return res.success(VariableAccessNode(tok))
-    elif self.current_token.type == "LPAREN":
+    elif self.current_token.type == TT_LPAREN:
       self.advance()
       expr = res.register(self.parse_expression())
       if res.error:
         return res
-      if (err := self.expect("RPAREN", "Expected ')'")) and isinstance(err, IllegalSyntaxError):
+      if (err := self.expect(TT_RPAREN, "Expected ')'")) and isinstance(err, IllegalSyntaxError):
         return res.failure(err)
       return res.success(expr)
     return res.failure(IllegalSyntaxError(self.current_token.pos_start, self.current_token.pos_end, f"Unexpected token: {self.current_token.type}"))
