@@ -162,6 +162,28 @@ class Parser:
       if res.error:
         return res
       return res.success(UnaryOperationNode(op, right))
+    return self.power()
+
+  def power(self):
+    res = ParseResult()
+    left = res.register(self.parse_atom())
+    if res.error:
+      return res
+    while self.current_token and self.current_token.type == "POWER":
+      op = self.current_token
+      self.advance()
+      right = res.register(self.parse_factor())
+      if res.error:
+        return res
+      left = BinaryOperationNode(left, op, right)
+    return res.success(left)
+
+  def parse_atom(self):
+    res = ParseResult()
+    if self.current_token.type in ("INT", "FLOAT"):
+      tok = self.current_token
+      self.advance()
+      return res.success(NumberNode(tok))
     elif self.current_token.type == "LPAREN":
       self.advance()
       expr = res.register(self.parse_expression())
@@ -170,7 +192,7 @@ class Parser:
       if (err := self.expect("RPAREN", "Expected ')'")) and isinstance(err, IllegalSyntaxError):
         return res.failure(err)
       return res.success(expr)
-    return res.register(self.parse_primary()) or res
+    return res.failure(IllegalSyntaxError(self.current_token.pos_start, self.current_token.pos_end, f"Unexpected token: {self.current_token.type}"))
 
   def parse_primary(self):
     res = ParseResult()

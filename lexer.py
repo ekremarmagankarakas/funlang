@@ -39,6 +39,7 @@ class Lexer:
         '-': "MINUS",
         '*': "MULTIPLY",
         '/': "DIVIDE",
+        '^': "POWER",
         '(': "LPAREN",
         ')': "RPAREN",
         '{': "LBRACE",

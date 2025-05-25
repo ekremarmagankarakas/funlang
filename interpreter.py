@@ -42,6 +42,11 @@ class Number:
       return Number(self.value / other.value).set_context(self.context), None
     return None
 
+  def powered_by(self, other):
+    if isinstance(other, Number):
+      return Number(self.value ** other.value).set_context(self.context), None
+    return None
+
   def __repr__(self):
     return str(self.value)
 
@@ -105,6 +110,8 @@ class Interpreter:
         result, error = left.multiplied_by(right)
       elif node.op.type == 'DIVIDE':
         result, error = left.divided_by(right)
+      elif node.op.type == 'POWER':
+        result, error = left.powered_by(right)
 
       if error:
         return res.failure(error)
