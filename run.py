@@ -1,6 +1,6 @@
 from lexer import Lexer
 from parser import Parser
-from interpreter import Interpreter
+from interpreter import Interpreter, Context
 
 
 def run(file_name, source):
@@ -15,6 +15,7 @@ def run(file_name, source):
     return None, None, None, ast.error
 
   interpreter = Interpreter()
-  result = interpreter.visit(ast.node)
+  context = Context("<program>")
+  result = interpreter.visit(ast.node, context)
 
   return result.value, ast.node, tokens, result.error

@@ -5,25 +5,30 @@ class Number:
   def __init__(self, value):
     self.value = value
     self.set_pos()
+    self.set_context()
 
   def set_pos(self, pos_start=None, pos_end=None):
     self.pos_start = pos_start
     self.pos_end = pos_end
     return self
 
+  def set_context(self, context=None):
+    self.context = context
+    return self
+
   def added_to(self, other):
     if isinstance(other, Number):
-      return Number(self.value + other.value), None
+      return Number(self.value + other.value).set_context(self.context), None
     return None
 
   def subtracted_by(self, other):
     if isinstance(other, Number):
-      return Number(self.value - other.value), None
+      return Number(self.value - other.value).set_context(self.context), None
     return None
 
   def multiplied_by(self, other):
     if isinstance(other, Number):
-      return Number(self.value * other.value), None
+      return Number(self.value * other.value).set_context(self.context), None
     return None
 
   def divided_by(self, other):
@@ -32,12 +37,20 @@ class Number:
         return None, RuntimeError(
             self.pos_start, other.pos_end,
             "Division by zero",
+            self.context,
         )
-      return Number(self.value / other.value), None
+      return Number(self.value / other.value).set_context(self.context), None
     return None
 
   def __repr__(self):
-    return f"Number({self.value})"
+    return str(self.value)
+
+
+class Context:
+  def __init__(self, display_name, parent=None, parent_entry_pos=None):
+    self.display_name = display_name
+    self.parent = parent
+    self.parent_entry_pos = parent_entry_pos
 
 
 class InterpreterResult:
@@ -60,25 +73,26 @@ class InterpreterResult:
 
 
 class Interpreter:
-  def visit(self, node):
+  def visit(self, node, context):
     method_name = 'visit_' + type(node).__name__
     visitor = getattr(self, method_name, self.generic_visit)
-    return visitor(node)
+    return visitor(node, context)
 
-  def generic_visit(self, node):
+  def generic_visit(self, node, context):
     raise Exception('No visit_{} method'.format(type(node).__name__))
 
-  def visit_NumberNode(self, node):
+  def visit_NumberNode(self, node, context):
     return InterpreterResult().success(
-        Number(node.tok.value).set_pos(node.pos_start, node.pos_end)
+        Number(node.tok.value).set_context(
+            context).set_pos(node.pos_start, node.pos_end)
     )
 
-  def visit_BinaryOperationNode(self, node):
+  def visit_BinaryOperationNode(self, node, context):
     res = InterpreterResult()
-    left = res.register(self.visit(node.left))
+    left = res.register(self.visit(node.left, context))
     if res.error:
       return res
-    right = res.register(self.visit(node.right))
+    right = res.register(self.visit(node.right, context))
     if res.error:
       return res
 
@@ -98,9 +112,9 @@ class Interpreter:
         return res.success(result.set_pos(node.pos_start, node.pos_end))
     return None
 
-  def visit_UnaryOperationNode(self, node):
+  def visit_UnaryOperationNode(self, node, context):
     res = InterpreterResult()
-    right = res.register(self.visit(node.right))
+    right = res.register(self.visit(node.right, context))
     if res.error:
       return res
     error = None
