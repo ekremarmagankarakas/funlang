@@ -1,4 +1,5 @@
-expr    : term (('+' | '-') term)*
+expr    : KEYWORD:VAR IDENT EQUALS expr
+          term (('+' | '-') term)*
 
 term    : factor (('*' | '/') factor)*
 
