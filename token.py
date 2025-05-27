@@ -30,7 +30,14 @@ TT_LBRACKET = "LBRACKET"
 TT_RBRACKET = "RBRACKET"
 TT_COMMA = "COMMA"
 TT_SEMICOLON = "SEMICOLON"
+
 TT_EQUALS = "EQUALS"
+TT_EE = "EE"
+TT_NE = "NE"
+TT_LT = "LT"
+TT_GT = "GT"
+TT_GTE = "GTE"
+TT_LTE = "LTE"
 
 TT_EOF = "EOF"
 
@@ -39,6 +46,9 @@ TK_YELL = "YELL"
 TK_DOUBT = "DOUBT"
 TK_MAYBE = "MAYBE"
 TK_VAR = "VAR"
+TK_AND = "AND"
+TK_OR = "OR"
+TK_NOT = "NOT"
 
 SYMBOLS = {
     '+': TT_PLUS,
@@ -63,4 +73,7 @@ KEYWORDS = {
     "doubt": TK_DOUBT,
     "maybe": TK_MAYBE,
     "var": TK_VAR,
+    "and": TK_AND,
+    "or": TK_OR,
+    "not": TK_NOT,
 }

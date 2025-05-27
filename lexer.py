@@ -1,5 +1,5 @@
 from error import IllegalCharError
-from token import Token, KEYWORDS, SYMBOLS, TT_EOF, TT_INT, TT_FLOAT, TT_STRING, TT_IDENT, TT_PLUS, TT_MINUS, TT_MULTIPLY, TT_DIVIDE, TT_POWER, TT_LPAREN, TT_RPAREN, TT_LBRACE, TT_RBRACE, TT_LBRACKET, TT_RBRACKET, TT_COMMA, TT_SEMICOLON, TT_EQUALS
+from token import Token, KEYWORDS, SYMBOLS, TT_EOF, TT_INT, TT_FLOAT, TT_STRING, TT_IDENT, TT_PLUS, TT_MINUS, TT_MULTIPLY, TT_DIVIDE, TT_POWER, TT_LPAREN, TT_RPAREN, TT_LBRACE, TT_RBRACE, TT_LBRACKET, TT_RBRACKET, TT_COMMA, TT_SEMICOLON, TT_EQUALS, TT_EE, TT_NE, TT_LT, TT_GT, TT_GTE, TT_LTE
 
 
 class Position:
@@ -76,6 +76,38 @@ class Lexer:
     self.advance()
     return Token(TT_STRING, string, pos_start, self.pos)
 
+  def read_not_equals(self):
+    self.advance()
+    pos_start = self.pos.copy()
+    if self.current_char == '=':
+      self.advance()
+      return Token(TT_NE, '!=', pos_start, self.pos)
+    return IllegalCharError(pos_start, self.pos.copy(), "Expected '=' after '!'")
+
+  def read_equals(self):
+    self.advance()
+    pos_start = self.pos.copy()
+    if self.current_char == '=':
+      self.advance()
+      return Token(TT_EE, '==', pos_start, self.pos)
+    return Token(TT_EQUALS, '=', pos_start, self.pos)
+
+  def read_less_than(self):
+    self.advance()
+    pos_start = self.pos.copy()
+    if self.current_char == '=':
+      self.advance()
+      return Token(TT_LTE, '<=', pos_start, self.pos)
+    return Token(TT_LT, '<', pos_start, self.pos)
+
+  def read_greater_than(self):
+    self.advance()
+    pos_start = self.pos.copy()
+    if self.current_char == '=':
+      self.advance()
+      return Token(TT_GTE, '>=', pos_start, self.pos)
+    return Token(TT_GT, '>', pos_start, self.pos)
+
   def tokenizer(self):
     tokens = []
     while self.current_char is not None:
@@ -91,8 +123,27 @@ class Lexer:
         read_string = self.read_string()
         if isinstance(read_string, IllegalCharError):
           return [], read_string
-        else:
-          tokens.append(read_string)
+        tokens.append(read_string)
+      elif self.current_char == '!':
+        read_not_equals = self.read_not_equals()
+        if isinstance(read_not_equals, IllegalCharError):
+          return [], read_not_equals
+        tokens.append(read_not_equals)
+      elif self.current_char == '=':
+        read_equals = self.read_equals()
+        if isinstance(read_equals, IllegalCharError):
+          return [], read_equals
+        tokens.append(read_equals)
+      elif self.current_char == '<':
+        read_less_than = self.read_less_than()
+        if isinstance(read_less_than, IllegalCharError):
+          return [], read_less_than
+        tokens.append(read_less_than)
+      elif self.current_char == '>':
+        read_greater_than = self.read_greater_than()
+        if isinstance(read_greater_than, IllegalCharError):
+          return [], read_greater_than
+        tokens.append(read_greater_than)
       elif self.current_char in SYMBOLS:
         pos_start = self.pos.copy()
         tokens.append(

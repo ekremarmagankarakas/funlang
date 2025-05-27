@@ -1,5 +1,5 @@
 from error import RuntimeError
-from token import Token, KEYWORDS, SYMBOLS, TT_EOF, TT_INT, TT_FLOAT, TT_STRING, TT_IDENT, TT_PLUS, TT_MINUS, TT_MULTIPLY, TT_DIVIDE, TT_POWER, TT_LPAREN, TT_RPAREN, TT_LBRACE, TT_RBRACE, TT_LBRACKET, TT_RBRACKET, TT_COMMA, TT_SEMICOLON, TT_EQUALS, TK_FUN, TK_YELL, TK_DOUBT, TK_MAYBE, TK_VAR
+from token import Token, KEYWORDS, SYMBOLS, TT_EOF, TT_INT, TT_FLOAT, TT_STRING, TT_IDENT, TT_PLUS, TT_MINUS, TT_MULTIPLY, TT_DIVIDE, TT_POWER, TT_LPAREN, TT_RPAREN, TT_LBRACE, TT_RBRACE, TT_LBRACKET, TT_RBRACKET, TT_COMMA, TT_SEMICOLON, TT_EQUALS, TK_FUN, TK_YELL, TK_DOUBT, TK_MAYBE, TK_VAR, TT_EQUALS, TT_EE, TT_NE, TT_LT, TT_GT, TT_GTE, TT_LTE, TK_NOT, TK_OR, TK_AND
 
 
 class Number:
@@ -47,6 +47,49 @@ class Number:
     if isinstance(other, Number):
       return Number(self.value ** other.value).set_context(self.context), None
     return None
+
+  def comparison_equals(self, other):
+    if isinstance(other, Number):
+      return Number(int(self.value == other.value)).set_context(self.context), None
+    return None
+
+  def comparison_not_equals(self, other):
+    if isinstance(other, Number):
+      return Number(int(self.value != other.value)).set_context(self.context), None
+    return None
+
+  def comparison_less_than(self, other):
+    if isinstance(other, Number):
+      return Number(int(self.value < other.value)).set_context(self.context), None
+    return None
+
+  def comparison_greater_than(self, other):
+    if isinstance(other, Number):
+      return Number(int(self.value > other.value)).set_context(self.context), None
+    return None
+
+  def comparison_less_than_or_equals(self, other):
+    if isinstance(other, Number):
+      return Number(int(self.value <= other.value)).set_context(self.context), None
+    return None
+
+  def comparison_greater_than_or_equals(self, other):
+    if isinstance(other, Number):
+      return Number(int(self.value >= other.value)).set_context(self.context), None
+    return None
+
+  def anded_with(self, other):
+    if isinstance(other, Number):
+      return Number(int(self.value and other.value)).set_context(self.context), None
+    return None
+
+  def ored_with(self, other):
+    if isinstance(other, Number):
+      return Number(int(self.value or other.value)).set_context(self.context), None
+    return None
+
+  def notted(self):
+    return Number(1 if self.value == 0 else 0).set_context(self.context), None
 
   def __repr__(self):
     return str(self.value)
@@ -159,6 +202,22 @@ class Interpreter:
         result, error = left.divided_by(right)
       elif node.op.type == TT_POWER:
         result, error = left.powered_by(right)
+      elif node.op.type == TT_EE:
+        result, error = left.comparison_equals(right)
+      elif node.op.type == TT_NE:
+        result, error = left.comparison_not_equals(right)
+      elif node.op.type == TT_LT:
+        result, error = left.comparison_less_than(right)
+      elif node.op.type == TT_GT:
+        result, error = left.comparison_greater_than(right)
+      elif node.op.type == TT_LTE:
+        result, error = left.comparison_less_than_or_equals(right)
+      elif node.op.type == TT_GTE:
+        result, error = left.comparison_greater_than_or_equals(right)
+      elif node.op.type == TK_AND:
+        result, error = left.anded_with(right)
+      elif node.op.type == TK_OR:
+        result, error = left.ored_with(right)
 
       if error:
         return res.failure(error)
@@ -177,6 +236,8 @@ class Interpreter:
         number, error = right.multiplied_by(Number(-1))
       elif node.op.type == TT_PLUS:
         number, error = right.added_to(Number(0))
+      elif node.op.type == TK_NOT:
+        number, error = right.notted()
       if error:
         return res.failure(error)
       else:

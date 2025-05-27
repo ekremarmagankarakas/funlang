@@ -1,13 +1,18 @@
-expr    : KEYWORD:VAR IDENT EQUALS expr
-          term (('+' | '-') term)*
+expr            : KEYWORD:VAR IDENT EQUALS expr
+                : comparison_expr (('and' | 'or') comparison_expr)*
 
-term    : factor (('*' | '/') factor)*
+comparison_expr : not comparison_expr
+                : arithmetic_expr (('==' | '!=' | '<' | '>' | '<=' | '>=') arithmetic_expr)*
 
-factor  : ('+' | '-')? factor
-        : power
+arithmetic_expr : term (('+' | '-') term)*
 
-power   : atom ('^' factor)*
+term            : factor (('*' | '/') factor)*
 
-atom    : INT|FLOAT
-        : LPAREN expr RPAREN
+factor          : ('+' | '-')? factor
+                : power
+
+power           : atom ('^' factor)*
+
+atom            : INT|FLOAT
+                : LPAREN expr RPAREN
 

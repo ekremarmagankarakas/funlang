@@ -1,5 +1,5 @@
 from ast_nodes import Program, FunctionDeclarationNode, PrintStatementNode, VariableAccessNode, VariableDeclarationNode, BinaryOperationNode, NumberNode, ExpressionStatementNode, FunctionCallNode, UnaryOperationNode
-from token import Token, KEYWORDS, SYMBOLS, TT_EOF, TT_INT, TT_FLOAT, TT_STRING, TT_IDENT, TT_PLUS, TT_MINUS, TT_MULTIPLY, TT_DIVIDE, TT_POWER, TT_LPAREN, TT_RPAREN, TT_LBRACE, TT_RBRACE, TT_LBRACKET, TT_RBRACKET, TT_COMMA, TT_SEMICOLON, TT_EQUALS, TK_FUN, TK_YELL, TK_DOUBT, TK_MAYBE, TK_VAR
+from token import Token, KEYWORDS, SYMBOLS, TT_EOF, TT_INT, TT_FLOAT, TT_STRING, TT_IDENT, TT_PLUS, TT_MINUS, TT_MULTIPLY, TT_DIVIDE, TT_POWER, TT_LPAREN, TT_RPAREN, TT_LBRACE, TT_RBRACE, TT_LBRACKET, TT_RBRACKET, TT_COMMA, TT_SEMICOLON, TT_EQUALS, TK_FUN, TK_YELL, TK_DOUBT, TK_MAYBE, TK_VAR, TT_EQUALS, TT_EE, TT_NE, TT_LT, TT_GT, TT_GTE, TT_LTE, TK_NOT, TK_OR, TK_AND
 from error import IllegalSyntaxError
 
 
@@ -138,9 +138,44 @@ class Parser:
       expr = res.register(self.parse_expression())
       if res.error:
         return res
-
       return res.success(VariableDeclarationNode(var_name, expr))
+    else:
+      left = res.register(self.parse_comparison_expression())
+      if res.error:
+        return res
+      while self.current_token and self.current_token.type in (TK_AND, TK_OR):
+        op = self.current_token
+        self.advance()
+        right = res.register(self.parse_comparison_expression())
+        if res.error:
+          return res
+        left = BinaryOperationNode(left, op, right)
+      return res.success(left)
 
+  def parse_comparison_expression(self):
+    res = ParseResult()
+    if self.current_token.type == TK_NOT:
+      op_token = self.current_token
+      self.advance()
+      node = res.register(self.parse_comparison_expression())
+      if res.error:
+        return res
+      return res.success(UnaryOperationNode(op_token, node))
+    else:
+      left = res.register(self.parse_arithmetic_expression())
+      if res.error:
+        return res
+      while self.current_token and self.current_token.type in (TT_EQUALS, TT_EE, TT_NE, TT_LT, TT_GT, TT_GTE, TT_LTE):
+        op = self.current_token
+        self.advance()
+        right = res.register(self.parse_arithmetic_expression())
+        if res.error:
+          return res
+        left = BinaryOperationNode(left, op, right)
+      return res.success(left)
+
+  def parse_arithmetic_expression(self):
+    res = ParseResult()
     left = res.register(self.parse_term())
     if res.error:
       return res
