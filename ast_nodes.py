@@ -98,3 +98,18 @@ class UnaryOperationNode:
 
   def __repr__(self):
     return f"UnaryOperation({self.op} {self.right})"
+
+
+class IfNode:
+  def __init__(self, cases, else_case=None):
+    self.cases = cases
+    self.else_case = else_case if else_case is not None else []
+
+    self.pos_start = cases[0][0].pos_start
+    if self.else_case:
+      self.pos_end = self.else_case[-1].pos_end
+    else:
+      self.pos_end = cases[-1][1][-1].pos_end
+
+    def __repr__(self):
+      return f"IfNode(cases={self.cases}, else_case={self.else_case})"

@@ -1,5 +1,5 @@
-from ast_nodes import Program, FunctionDeclarationNode, PrintStatementNode, VariableAccessNode, VariableDeclarationNode, BinaryOperationNode, NumberNode, ExpressionStatementNode, FunctionCallNode, UnaryOperationNode
-from token import Token, KEYWORDS, SYMBOLS, TT_EOF, TT_INT, TT_FLOAT, TT_STRING, TT_IDENT, TT_PLUS, TT_MINUS, TT_MULTIPLY, TT_DIVIDE, TT_POWER, TT_LPAREN, TT_RPAREN, TT_LBRACE, TT_RBRACE, TT_LBRACKET, TT_RBRACKET, TT_COMMA, TT_SEMICOLON, TT_EQUALS, TK_FUN, TK_YELL, TK_DOUBT, TK_MAYBE, TK_VAR, TT_EQUALS, TT_EE, TT_NE, TT_LT, TT_GT, TT_GTE, TT_LTE, TK_NOT, TK_OR, TK_AND
+from ast_nodes import Program, FunctionDeclarationNode, PrintStatementNode, VariableAccessNode, VariableDeclarationNode, BinaryOperationNode, NumberNode, ExpressionStatementNode, FunctionCallNode, UnaryOperationNode, IfNode
+from token import Token, KEYWORDS, SYMBOLS, TT_EOF, TT_INT, TT_FLOAT, TT_STRING, TT_IDENT, TT_PLUS, TT_MINUS, TT_MULTIPLY, TT_DIVIDE, TT_POWER, TT_LPAREN, TT_RPAREN, TT_LBRACE, TT_RBRACE, TT_LBRACKET, TT_RBRACKET, TT_COMMA, TT_SEMICOLON, TT_EQUALS, TK_FUN, TK_YELL, TK_VAR, TT_EQUALS, TT_EE, TT_NE, TT_LT, TT_GT, TT_GTE, TT_LTE, TK_NOT, TK_OR, TK_AND, TK_IF, TK_ELIF, TK_ELSE
 from error import IllegalSyntaxError
 
 
@@ -244,4 +244,70 @@ class Parser:
       if (err := self.expect(TT_RPAREN, "Expected ')'")) and isinstance(err, IllegalSyntaxError):
         return res.failure(err)
       return res.success(expr)
+    elif self.current_token.type == TK_IF:
+      if_expr = res.register(self.parse_if_expression())
+      if res.error:
+        return res
+      return res.success(if_expr)
     return res.failure(IllegalSyntaxError(self.current_token.pos_start, self.current_token.pos_end, f"Unexpected token: {self.current_token.type}"))
+
+  def parse_if_expression(self):
+    res = ParseResult()
+    cases = []
+    else_case = []
+    if (err := self.expect(TK_IF, "Expected 'if' keyword")) and isinstance(err, IllegalSyntaxError):
+      return res.failure(err)
+
+    condition = res.register(self.parse_expression())
+    if res.error:
+      return res
+
+    if (err := self.expect(TT_LBRACE, "Expected '{' after 'if' condition")) and isinstance(err, IllegalSyntaxError):
+      return res.failure(err)
+
+    expressions = []
+    while self.current_token.type != TT_RBRACE:
+      expr = res.register(self.parse_expression())
+      if res.error:
+        return res
+      expressions.append(expr)
+
+    if (err := self.expect(TT_RBRACE, "Expected '}' after 'if' block")) and isinstance(err, IllegalSyntaxError):
+      return res.failure(err)
+    cases.append((condition, expressions))
+
+    while self.current_token.type == TK_ELIF:
+      self.advance()
+      condition = res.register(self.parse_expression())
+      if res.error:
+        return res
+
+      if (err := self.expect(TT_LBRACE, "Expected '{' after 'elif' condition")) and isinstance(err, IllegalSyntaxError):
+        return res.failure(err)
+
+      expressions = []
+      while self.current_token.type != TT_RBRACE:
+        expr = res.register(self.parse_expression())
+        if res.error:
+          return res
+        expressions.append(expr)
+
+      if (err := self.expect(TT_RBRACE, "Expected '}' after 'elif' block")) and isinstance(err, IllegalSyntaxError):
+        return res.failure(err)
+      cases.append((condition, expressions))
+
+    if self.current_token.type == TK_ELSE:
+      self.advance()
+      if (err := self.expect(TT_LBRACE, "Expected '{' after 'else' keyword")) and isinstance(err, IllegalSyntaxError):
+        return res.failure(err)
+
+      while self.current_token.type != TT_RBRACE:
+        expr = res.register(self.parse_expression())
+        if res.error:
+          return res
+        else_case.append(expr)
+
+      if (err := self.expect(TT_RBRACE, "Expected '}' after 'else' block")) and isinstance(err, IllegalSyntaxError):
+        return res.failure(err)
+
+    return res.success(IfNode(cases, else_case))

@@ -1,5 +1,5 @@
 from error import RuntimeError
-from token import Token, KEYWORDS, SYMBOLS, TT_EOF, TT_INT, TT_FLOAT, TT_STRING, TT_IDENT, TT_PLUS, TT_MINUS, TT_MULTIPLY, TT_DIVIDE, TT_POWER, TT_LPAREN, TT_RPAREN, TT_LBRACE, TT_RBRACE, TT_LBRACKET, TT_RBRACKET, TT_COMMA, TT_SEMICOLON, TT_EQUALS, TK_FUN, TK_YELL, TK_DOUBT, TK_MAYBE, TK_VAR, TT_EQUALS, TT_EE, TT_NE, TT_LT, TT_GT, TT_GTE, TT_LTE, TK_NOT, TK_OR, TK_AND
+from token import Token, KEYWORDS, SYMBOLS, TT_EOF, TT_INT, TT_FLOAT, TT_STRING, TT_IDENT, TT_PLUS, TT_MINUS, TT_MULTIPLY, TT_DIVIDE, TT_POWER, TT_LPAREN, TT_RPAREN, TT_LBRACE, TT_RBRACE, TT_LBRACKET, TT_RBRACKET, TT_COMMA, TT_SEMICOLON, TT_EQUALS, TK_FUN, TK_YELL, TK_VAR, TT_EQUALS, TT_EE, TT_NE, TT_LT, TT_GT, TT_GTE, TT_LTE, TK_NOT, TK_OR, TK_AND, TK_IF, TK_ELSE
 
 
 class Number:
@@ -243,3 +243,23 @@ class Interpreter:
       else:
         return res.success(number.set_pos(node.pos_start, node.pos_end))
     return None
+
+  def visit_IfNode(self, node, context):
+    res = InterpreterResult()
+    for condition, expressions in node.cases:
+      condition_value = res.register(self.visit(condition, context))
+      if res.error:
+        return res
+      if isinstance(condition_value, Number) and condition_value.value != 0:
+        for expr in expressions:
+          value = res.register(self.visit(expr, context))
+          if res.error:
+            return res
+        return res.success(value.set_pos(node.pos_start, node.pos_end))
+    if node.else_case:
+      for expr in node.else_case:
+        value = res.register(self.visit(expr, context))
+        if res.error:
+          return res
+      return res.success(value.set_pos(node.pos_start, node.pos_end))
+    return res.success(None)

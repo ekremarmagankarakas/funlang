@@ -43,12 +43,13 @@ TT_EOF = "EOF"
 
 TK_FUN = "FUN"
 TK_YELL = "YELL"
-TK_DOUBT = "DOUBT"
-TK_MAYBE = "MAYBE"
 TK_VAR = "VAR"
 TK_AND = "AND"
 TK_OR = "OR"
 TK_NOT = "NOT"
+TK_IF = "IF"
+TK_ELIF = "ELIF"
+TK_ELSE = "ELSE"
 
 SYMBOLS = {
     '+': TT_PLUS,
@@ -70,8 +71,9 @@ SYMBOLS = {
 KEYWORDS = {
     "fun": TK_FUN,
     "yell": TK_YELL,
-    "doubt": TK_DOUBT,
-    "maybe": TK_MAYBE,
+    "if": TK_IF,
+    "elif": TK_ELIF,
+    "else": TK_ELSE,
     "var": TK_VAR,
     "and": TK_AND,
     "or": TK_OR,
