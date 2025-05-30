@@ -17,6 +17,6 @@ atom            : INT|FLOAT
                 : LPAREN expr RPAREN
                 : if_expr
 
-if_expr         : IF expr THEN expr
-                : (ELIF expr THEN expr)*
-                : (ELSE expr)?
+if_expr         : IF expr { expr }
+                : (ELIF expr { expr })*
+                : (ELSE { expr })?
