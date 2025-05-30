@@ -191,39 +191,39 @@ class Interpreter:
     if res.error:
       return res
 
-    if isinstance(left, Number) and isinstance(right, Number):
-      if node.op.type == TT_PLUS:
-        result, error = left.added_to(right)
-      elif node.op.type == TT_MINUS:
-        result, error = left.subtracted_by(right)
-      elif node.op.type == TT_MULTIPLY:
-        result, error = left.multiplied_by(right)
-      elif node.op.type == TT_DIVIDE:
-        result, error = left.divided_by(right)
-      elif node.op.type == TT_POWER:
-        result, error = left.powered_by(right)
-      elif node.op.type == TT_EE:
-        result, error = left.comparison_equals(right)
-      elif node.op.type == TT_NE:
-        result, error = left.comparison_not_equals(right)
-      elif node.op.type == TT_LT:
-        result, error = left.comparison_less_than(right)
-      elif node.op.type == TT_GT:
-        result, error = left.comparison_greater_than(right)
-      elif node.op.type == TT_LTE:
-        result, error = left.comparison_less_than_or_equals(right)
-      elif node.op.type == TT_GTE:
-        result, error = left.comparison_greater_than_or_equals(right)
-      elif node.op.type == TK_AND:
-        result, error = left.anded_with(right)
-      elif node.op.type == TK_OR:
-        result, error = left.ored_with(right)
+    error = None
+    result = None
+    if node.op.type == TT_PLUS:
+      result, error = left.added_to(right)
+    elif node.op.type == TT_MINUS:
+      result, error = left.subtracted_by(right)
+    elif node.op.type == TT_MULTIPLY:
+      result, error = left.multiplied_by(right)
+    elif node.op.type == TT_DIVIDE:
+      result, error = left.divided_by(right)
+    elif node.op.type == TT_POWER:
+      result, error = left.powered_by(right)
+    elif node.op.type == TT_EE:
+      result, error = left.comparison_equals(right)
+    elif node.op.type == TT_NE:
+      result, error = left.comparison_not_equals(right)
+    elif node.op.type == TT_LT:
+      result, error = left.comparison_less_than(right)
+    elif node.op.type == TT_GT:
+      result, error = left.comparison_greater_than(right)
+    elif node.op.type == TT_LTE:
+      result, error = left.comparison_less_than_or_equals(right)
+    elif node.op.type == TT_GTE:
+      result, error = left.comparison_greater_than_or_equals(right)
+    elif node.op.type == TK_AND:
+      result, error = left.anded_with(right)
+    elif node.op.type == TK_OR:
+      result, error = left.ored_with(right)
 
-      if error:
-        return res.failure(error)
-      else:
-        return res.success(result.set_pos(node.pos_start, node.pos_end))
-    return None
+    if error:
+      return res.failure(error)
+    else:
+      return res.success(result.set_pos(node.pos_start, node.pos_end))
 
   def visit_UnaryOperationNode(self, node, context):
     res = InterpreterResult()
@@ -262,4 +262,49 @@ class Interpreter:
         if res.error:
           return res
       return res.success(value.set_pos(node.pos_start, node.pos_end))
+    return res.success(None)
+
+  def visit_ForNode(self, node, context):
+    res = InterpreterResult()
+    start_value = res.register(self.visit(node.start, context))
+    if res.error:
+      return res
+    end_value = res.register(self.visit(node.end, context))
+    if res.error:
+      return res
+    if node.step:
+      step_value = res.register(self.visit(node.step, context))
+      if res.error:
+        return res
+    else:
+      step_value = Number(1)
+
+    context.symbol_table.set(node.var_name.value, start_value)
+
+    current_value = start_value.value
+    end_value = end_value.value
+    step_value = step_value.value
+
+    while (step_value > 0 and current_value < end_value) or (step_value < 0 and current_value > end_value):
+      for expr in node.body:
+        res.register(self.visit(expr, context))
+        if res.error:
+          return res
+      current_value += step_value
+      context.symbol_table.set(node.var_name.value, Number(current_value))
+
+    return res.success(None)
+
+  def visit_WhileNode(self, node, context):
+    res = InterpreterResult()
+    while True:
+      condition_value = res.register(self.visit(node.condition, context))
+      if res.error:
+        return res
+      if isinstance(condition_value, Number) and condition_value.value == 0:
+        break
+      for expr in node.body:
+        res.register(self.visit(expr, context))
+        if res.error:
+          return res
     return res.success(None)

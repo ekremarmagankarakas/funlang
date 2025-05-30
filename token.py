@@ -50,6 +50,8 @@ TK_NOT = "NOT"
 TK_IF = "IF"
 TK_ELIF = "ELIF"
 TK_ELSE = "ELSE"
+TK_FOR = "FOR"
+TK_WHILE = "WHILE"
 
 SYMBOLS = {
     '+': TT_PLUS,
@@ -78,4 +80,6 @@ KEYWORDS = {
     "and": TK_AND,
     "or": TK_OR,
     "not": TK_NOT,
+    "for": TK_FOR,
+    "while": TK_WHILE,
 }

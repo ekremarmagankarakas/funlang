@@ -113,3 +113,30 @@ class IfNode:
 
     def __repr__(self):
       return f"IfNode(cases={self.cases}, else_case={self.else_case})"
+
+
+class ForNode:
+  def __init__(self, var_name, start, end, step, body):
+    self.var_name = var_name
+    self.start = start
+    self.end = end
+    self.step = step
+    self.body = body
+
+    self.pos_start = start.pos_start
+    self.pos_end = body[-1].pos_end
+
+  def __repr__(self):
+    return f"ForNode(var_name={self.var_name}, start={self.start}, end={self.end}, step={self.step}, body={self.body})"
+
+
+class WhileNode:
+  def __init__(self, condition, body):
+    self.condition = condition
+    self.body = body
+
+    self.pos_start = condition.pos_start
+    self.pos_end = body[-1].pos_end
+
+  def __repr__(self):
+    return f"WhileNode(condition={self.condition}, body={self.body})"
