@@ -173,12 +173,6 @@ class Interpreter:
     value = res.register(self.visit(node.value, context))
     if res.error:
       return res
-    if context.symbol_table.get(var_name) is not None:
-      return res.failure(RuntimeError(
-          node.pos_start, node.pos_end,
-          f"Variable '{var_name}' already defined",
-          context,
-      ))
     context.symbol_table.set(var_name, value)
     return res.success(value)
 
