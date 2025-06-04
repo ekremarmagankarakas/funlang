@@ -2,9 +2,8 @@ from error import RuntimeError
 from token import Token, KEYWORDS, SYMBOLS, TT_EOF, TT_INT, TT_FLOAT, TT_STRING, TT_IDENT, TT_PLUS, TT_MINUS, TT_MULTIPLY, TT_DIVIDE, TT_POWER, TT_LPAREN, TT_RPAREN, TT_LBRACE, TT_RBRACE, TT_LBRACKET, TT_RBRACKET, TT_COMMA, TT_SEMICOLON, TT_EQUALS, TK_FUN, TK_YELL, TK_VAR, TT_EQUALS, TT_EE, TT_NE, TT_LT, TT_GT, TT_GTE, TT_LTE, TK_NOT, TK_OR, TK_AND, TK_IF, TK_ELSE
 
 
-class Number:
-  def __init__(self, value):
-    self.value = value
+class Value:
+  def __init__(self):
     self.set_pos()
     self.set_context()
 
@@ -18,19 +17,82 @@ class Number:
     return self
 
   def added_to(self, other):
+    return None, self.illegal_operation(other)
+
+  def subtracted_by(self, other):
+    return None, self.illegal_operation(other)
+
+  def multiplied_by(self, other):
+    return None, self.illegal_operation(other)
+
+  def divided_by(self, other):
+    return None, self.illegal_operation(other)
+
+  def powered_by(self, other):
+    return None, self.illegal_operation(other)
+
+  def comparison_equals(self, other):
+    return None, self.illegal_operation(other)
+
+  def comparison_not_equals(self, other):
+    return None, self.illegal_operation(other)
+
+  def comparison_less_than(self, other):
+    return None, self.illegal_operation(other)
+
+  def comparison_greater_than(self, other):
+    return None, self.illegal_operation(other)
+
+  def comparison_less_than_or_equals(self, other):
+    return None, self.illegal_operation(other)
+
+  def comparison_greater_than_or_equals(self, other):
+    return None, self.illegal_operation(other)
+
+  def anded_with(self, other):
+    return None, self.illegal_operation(other)
+
+  def ored_with(self, other):
+    return None, self.illegal_operation(other)
+
+  def notted(self):
+    return None, self.illegal_operation()
+
+  def execute(self, args):
+    return InterpreterResult().failure(self.illegal_operation())
+
+  def copy(self):
+    raise Exception('No copy method defined')
+
+  def illegal_operation(self, other=None):
+    if not other:
+      other = self
+    return RuntimeError(
+        self.pos_start, other.pos_end,
+        'Illegal operation',
+        self.context
+    )
+
+
+class Number(Value):
+  def __init__(self, value):
+    super().__init__()
+    self.value = value
+
+  def added_to(self, other):
     if isinstance(other, Number):
       return Number(self.value + other.value).set_context(self.context), None
-    return None
+    return None, Value.illegal_operation(self, other)
 
   def subtracted_by(self, other):
     if isinstance(other, Number):
       return Number(self.value - other.value).set_context(self.context), None
-    return None
+    return None, Value.illegal_operation(self, other)
 
   def multiplied_by(self, other):
     if isinstance(other, Number):
       return Number(self.value * other.value).set_context(self.context), None
-    return None
+    return None, Value.illegal_operation(self, other)
 
   def divided_by(self, other):
     if isinstance(other, Number):
@@ -41,58 +103,101 @@ class Number:
             self.context,
         )
       return Number(self.value / other.value).set_context(self.context), None
-    return None
+    return None, Value.illegal_operation(self, other)
 
   def powered_by(self, other):
     if isinstance(other, Number):
       return Number(self.value ** other.value).set_context(self.context), None
-    return None
+    return None, Value.illegal_operation(self, other)
 
   def comparison_equals(self, other):
     if isinstance(other, Number):
       return Number(int(self.value == other.value)).set_context(self.context), None
-    return None
+    return None, Value.illegal_operation(self, other)
 
   def comparison_not_equals(self, other):
     if isinstance(other, Number):
       return Number(int(self.value != other.value)).set_context(self.context), None
-    return None
+    return None, Value.illegal_operation(self, other)
 
   def comparison_less_than(self, other):
     if isinstance(other, Number):
       return Number(int(self.value < other.value)).set_context(self.context), None
-    return None
+    return None, Value.illegal_operation(self, other)
 
   def comparison_greater_than(self, other):
     if isinstance(other, Number):
       return Number(int(self.value > other.value)).set_context(self.context), None
-    return None
+    return None, Value.illegal_operation(self, other)
 
   def comparison_less_than_or_equals(self, other):
     if isinstance(other, Number):
       return Number(int(self.value <= other.value)).set_context(self.context), None
-    return None
+    return None, Value.illegal_operation(self, other)
 
   def comparison_greater_than_or_equals(self, other):
     if isinstance(other, Number):
       return Number(int(self.value >= other.value)).set_context(self.context), None
-    return None
+    return None, Value.illegal_operation(self, other)
 
   def anded_with(self, other):
     if isinstance(other, Number):
       return Number(int(self.value and other.value)).set_context(self.context), None
-    return None
+    return None, Value.illegal_operation(self, other)
 
   def ored_with(self, other):
     if isinstance(other, Number):
       return Number(int(self.value or other.value)).set_context(self.context), None
-    return None
+    return None, Value.illegal_operation(self, other)
 
   def notted(self):
     return Number(1 if self.value == 0 else 0).set_context(self.context), None
 
   def __repr__(self):
     return str(self.value)
+
+
+class Function(Value):
+  def __init__(self, name, body, args):
+    super().__init__()
+    self.name = name or "<anonymous>"
+    self.body = body
+    self.args = args
+
+  def execute(self, args):
+    res = InterpreterResult()
+    interpreter = Interpreter()
+    new_context = Context(self.name, self.context, self.pos_start)
+    new_context.symbol_table = SymbolTable(new_context.parent.symbol_table)
+
+    if len(args) > len(self.args):
+      return res.failure(RuntimeError(
+          self.pos_start, self.pos_end,
+          f"{len(args) - len(self.args)} too many args passed into '{self.name}'",
+          self.context
+      ))
+
+    if len(args) < len(self.args):
+      return res.failure(RuntimeError(
+          self.pos_start, self.pos_end,
+          f"{len(self.args) - len(args)} too few args passed into '{self.name}'",
+          self.context
+      ))
+
+    for i in range(len(args)):
+      arg_name = self.args[i]
+      arg_value = args[i]
+      arg_value.set_context(new_context)
+      new_context.symbol_table.set(arg_name, arg_value)
+
+    for i in range(len(self.body)):
+      value = res.register(interpreter.visit(self.body[i], new_context))
+    if res.error:
+      return res
+    return res.success(value)
+
+  def __repr__(self):
+    return f"<function {self.name}>"
 
 
 class Context:
@@ -104,9 +209,9 @@ class Context:
 
 
 class SymbolTable:
-  def __init__(self):
+  def __init__(self, parent=None):
     self.symbols = {}
-    self.parent = None
+    self.parent = parent
 
   def get(self, name):
     value = self.symbols.get(name, None)
@@ -302,3 +407,35 @@ class Interpreter:
         if res.error:
           return res
     return res.success(None)
+
+  def visit_FunctionDeclarationNode(self, node, context):
+    res = InterpreterResult()
+
+    func_name = node.name.value if node.name else None
+    body_node = node.body
+    arg_names = [arg_name.value for arg_name in node.args]
+    func_value = Function(func_name, body_node, arg_names).set_context(
+        context).set_pos(node.pos_start, node.pos_end)
+
+    if node.name:
+      context.symbol_table.set(func_name, func_value)
+
+    return res.success(func_value)
+
+  def visit_FunctionCallNode(self, node, context):
+    res = InterpreterResult()
+    args = []
+
+    value_to_call = res.register(self.visit(node.name, context))
+    if res.error:
+      return res
+
+    for arg_node in node.args:
+      args.append(res.register(self.visit(arg_node, context)))
+      if res.error:
+        return res
+
+    return_value = res.register(value_to_call.execute(args))
+    if res.error:
+      return res
+    return res.success(return_value)

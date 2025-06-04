@@ -4,6 +4,8 @@ from interpreter import Interpreter, Context, SymbolTable, Number
 
 global_symbol_table = SymbolTable()
 global_symbol_table.set("null", Number(0))
+global_symbol_table.set("false", Number(0))
+global_symbol_table.set("true", Number(1))
 
 
 def run(file_name, source):
@@ -15,11 +17,14 @@ def run(file_name, source):
   parser = Parser(tokens)
   ast = parser.parse()
   if ast.error:
-    return None, None, None, ast.error
+    return None, None, tokens, ast.error
 
   interpreter = Interpreter()
   context = Context("<program>")
   context.symbol_table = global_symbol_table
   result = interpreter.visit(ast.node, context)
+
+  if result.error:
+    None, ast.node, tokens, result.error
 
   return result.value, ast.node, tokens, result.error

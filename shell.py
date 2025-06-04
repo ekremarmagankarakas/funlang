@@ -9,7 +9,7 @@ while True:
 
   if error:
     print(error.as_string())
-  else:
-    print("Tokens:", tokens)
-    print("AST:", ast)
-    print("Result:", interpreter)
+
+  print("Tokens:", tokens)
+  print("AST:", ast)
+  print("Result:", interpreter)

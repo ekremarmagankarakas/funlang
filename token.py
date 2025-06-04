@@ -11,6 +11,7 @@ class Token:
     return self.type
 
 
+# TOKENS
 TT_INT = "INT"
 TT_FLOAT = "FLOAT"
 TT_STRING = "STRING"
@@ -30,6 +31,7 @@ TT_LBRACKET = "LBRACKET"
 TT_RBRACKET = "RBRACKET"
 TT_COMMA = "COMMA"
 TT_SEMICOLON = "SEMICOLON"
+TT_ARROW = "ARROW"
 
 TT_EQUALS = "EQUALS"
 TT_EE = "EE"
@@ -40,18 +42,6 @@ TT_GTE = "GTE"
 TT_LTE = "LTE"
 
 TT_EOF = "EOF"
-
-TK_FUN = "FUN"
-TK_YELL = "YELL"
-TK_VAR = "VAR"
-TK_AND = "AND"
-TK_OR = "OR"
-TK_NOT = "NOT"
-TK_IF = "IF"
-TK_ELIF = "ELIF"
-TK_ELSE = "ELSE"
-TK_FOR = "FOR"
-TK_WHILE = "WHILE"
 
 SYMBOLS = {
     '+': TT_PLUS,
@@ -69,6 +59,19 @@ SYMBOLS = {
     ',': TT_COMMA,
     '=': TT_EQUALS,
 }
+
+# KEYWORDS
+TK_FUN = "FUN"
+TK_YELL = "YELL"
+TK_VAR = "VAR"
+TK_AND = "AND"
+TK_OR = "OR"
+TK_NOT = "NOT"
+TK_IF = "IF"
+TK_ELIF = "ELIF"
+TK_ELSE = "ELSE"
+TK_FOR = "FOR"
+TK_WHILE = "WHILE"
 
 KEYWORDS = {
     "fun": TK_FUN,

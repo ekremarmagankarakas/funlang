@@ -9,17 +9,33 @@ class Program:
 class FunctionDeclarationNode:
   def __init__(self, name, params, body):
     self.name = name
-    self.params = params
+    self.args = params
     self.body = body
 
+    if self.name:
+      self.pos_start = self.name.pos_start
+    elif len(self.args) > 0:
+      self.pos_start = self.args[0].pos_start
+    else:
+      self.pos_start = self.body[0].pos_start
+
+    self.pos_end = self.body[-1].pos_start
+
   def __repr__(self):
-    return f"FunctionDeclaration(name={self.name}, params={self.params}, body={self.body})"
+    return f"FunctionDeclaration(name={self.name}, params={self.args}, body={self.body})"
 
 
 class FunctionCallNode:
   def __init__(self, name, args):
     self.name = name
     self.args = args
+
+    self.pos_start = self.name.pos_start
+
+    if len(self.args) > 0:
+      self.pos_end = self.args[-1].pos_end
+    else:
+      self.pos_end = self.name.pos_end
 
   def __repr__(self):
     return f"FunctionCall(name={self.name}, args={self.args})"

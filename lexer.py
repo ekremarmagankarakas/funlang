@@ -1,5 +1,5 @@
 from error import IllegalCharError
-from token import Token, KEYWORDS, SYMBOLS, TT_EOF, TT_INT, TT_FLOAT, TT_STRING, TT_IDENT, TT_PLUS, TT_MINUS, TT_MULTIPLY, TT_DIVIDE, TT_POWER, TT_LPAREN, TT_RPAREN, TT_LBRACE, TT_RBRACE, TT_LBRACKET, TT_RBRACKET, TT_COMMA, TT_SEMICOLON, TT_EQUALS, TT_EE, TT_NE, TT_LT, TT_GT, TT_GTE, TT_LTE
+from token import Token, KEYWORDS, SYMBOLS, TT_EOF, TT_INT, TT_FLOAT, TT_STRING, TT_IDENT, TT_PLUS, TT_MINUS, TT_MULTIPLY, TT_DIVIDE, TT_POWER, TT_LPAREN, TT_RPAREN, TT_LBRACE, TT_RBRACE, TT_LBRACKET, TT_RBRACKET, TT_COMMA, TT_SEMICOLON, TT_EQUALS, TT_EE, TT_NE, TT_LT, TT_GT, TT_GTE, TT_LTE, TT_ARROW
 
 
 class Position:
@@ -108,6 +108,14 @@ class Lexer:
       return Token(TT_GTE, '>=', pos_start, self.pos)
     return Token(TT_GT, '>', pos_start, self.pos)
 
+  def read_arrow_or_less_than(self):
+    self.advance()
+    pos_start = self.pos.copy()
+    if self.current_char == '>':
+      self.advance()
+      return Token(TT_ARROW, '->', pos_start, self.pos)
+    return Token(TT_MINUS, '-', pos_start, self.pos)
+
   def tokenizer(self):
     tokens = []
     while self.current_char is not None:
@@ -144,6 +152,11 @@ class Lexer:
         if isinstance(read_greater_than, IllegalCharError):
           return [], read_greater_than
         tokens.append(read_greater_than)
+      elif self.current_char == '-':
+        read_arrow_or_less_than = self.read_arrow_or_less_than()
+        if isinstance(read_arrow_or_less_than, IllegalCharError):
+          return [], read_arrow_or_less_than
+        tokens.append(read_arrow_or_less_than)
       elif self.current_char in SYMBOLS:
         pos_start = self.pos.copy()
         tokens.append(
