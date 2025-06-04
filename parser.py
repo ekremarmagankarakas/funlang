@@ -1,4 +1,4 @@
-from ast_nodes import Program, FunctionDeclarationNode, PrintStatementNode, VariableAccessNode, VariableDeclarationNode, BinaryOperationNode, NumberNode, ExpressionStatementNode, FunctionCallNode, UnaryOperationNode, IfNode, ForNode, WhileNode
+from ast_nodes import Program, FunctionDeclarationNode, PrintStatementNode, VariableAccessNode, VariableDeclarationNode, BinaryOperationNode, NumberNode, ExpressionStatementNode, FunctionCallNode, UnaryOperationNode, IfNode, ForNode, WhileNode, StringNode
 from token import Token, KEYWORDS, SYMBOLS, TT_EOF, TT_INT, TT_FLOAT, TT_STRING, TT_IDENT, TT_PLUS, TT_MINUS, TT_MULTIPLY, TT_DIVIDE, TT_POWER, TT_LPAREN, TT_RPAREN, TT_LBRACE, TT_RBRACE, TT_LBRACKET, TT_RBRACKET, TT_COMMA, TT_SEMICOLON, TT_EQUALS, TK_FUN, TK_YELL, TK_VAR, TT_EQUALS, TT_EE, TT_NE, TT_LT, TT_GT, TT_GTE, TT_LTE, TK_NOT, TK_OR, TK_AND, TK_IF, TK_ELIF, TK_ELSE, TK_FOR, TK_WHILE
 from error import IllegalSyntaxError
 
@@ -234,6 +234,9 @@ class Parser:
     if self.current_token.type in (TT_INT, TT_FLOAT):
       self.advance()
       return res.success(NumberNode(tok))
+    elif self.current_token.type in TT_STRING:
+      self.advance()
+      return res.success(StringNode(tok))
     elif self.current_token.type == TT_IDENT:
       self.advance()
       return res.success(VariableAccessNode(tok))

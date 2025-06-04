@@ -11,13 +11,16 @@ term            : factor (('*' | '/') factor)*
 factor          : ('+' | '-')? factor
                 : power
 
-power           : atom ('^' factor)*
+power           : function_call('^' factor)*
 
-atom            : INT|FLOAT
+function_call   : atom(expr(, expr)*)
+
+atom            : INT|FLOAT|IDENT|STRING
                 : LPAREN expr RPAREN
                 : if_expr
                 : for_expr
                 : while_expr
+                : function_declaration
 
 if_expr         : IF expr { expr }
                 : (ELIF expr { expr })*
@@ -26,4 +29,6 @@ if_expr         : IF expr { expr }
 for_expr        : FOR IDENT '=' expr ',' expr { expr }
 
 while_expr      : WHILE expr { expr }
+
+function_declaration : fun (atom)* '(' (expr (, expr)*)* ')' '{' expr '}'
 

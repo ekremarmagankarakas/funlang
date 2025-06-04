@@ -65,9 +65,22 @@ class Lexer:
     self.advance()
     string = ""
     pos_start = self.pos.copy()
-    while self.current_char is not None and self.current_char != '"':
-      string += self.current_char
+    escape_character = False
+
+    escape_characters = {
+        'n': '\n',
+        't': '\t'
+    }
+
+    while self.current_char is not None and self.current_char != '"' or escape_character:
+      if escape_character:
+        string += escape_characters.get(self.current_char, self.current_char)
+      else:
+        if self.current_char == '\\':
+          escape_character = True
+        string += self.current_char
       self.advance()
+      escape_character = False
 
     if self.current_char != '"':
       return IllegalCharError(
