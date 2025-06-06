@@ -223,7 +223,7 @@ class List(Value):
     return copy
 
   def __repr__(self):
-    return f'[{". ".join([str(x) for x in self.elements])}]'
+    return f'[{", ".join([str(x) for x in self.elements])}]'
 
 
 class Function(Value):
@@ -276,6 +276,9 @@ class Context:
     self.parent_entry_pos = parent_entry_pos
     self.symbol_table = None
 
+  def __repr__(self):
+    return f'{self.display_name}, {self.parent}, {self.parent_entry_pos}, {self.symbol_table}'
+
 
 class SymbolTable:
   def __init__(self, parent=None):
@@ -293,6 +296,9 @@ class SymbolTable:
 
   def remove(self, name):
     del self.symbols[name]
+
+  def __repr__(self):
+    return f'{self.symbols}, {self.parent}'
 
 
 class InterpreterResult:
