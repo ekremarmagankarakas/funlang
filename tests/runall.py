@@ -1,0 +1,2 @@
+import tests.list_operations
+import tests.arith_operations
