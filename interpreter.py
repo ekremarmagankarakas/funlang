@@ -178,6 +178,54 @@ class String(Value):
     return self.value
 
 
+class List(Value):
+  def __init__(self, elements):
+    super().__init__()
+    self.elements = elements
+
+  def added_to(self, other):
+    new_list = self.copy()
+    new_list.elements.append(other)
+    return new_list, None
+
+  def multiplied_by(self, other):
+    if isinstance(other, List):
+      new_list = self.copy()
+      new_list.elements.extend(other.elements)
+      return new_list, None
+    else:
+      return None, Value.illegal_operation(self, other)
+
+  def subtracted_by(self, other):
+    if isinstance(other, Number):
+      new_list = self.copy()
+      try:
+        new_list.elements.pop(other.value)
+        return new_list, None
+      except:
+        return None, RuntimeError(other.pos_start, other.pos_end, 'Out of bounds', self.context)
+    else:
+      return None, Value.illegal_operation(self, other)
+
+  def divided_by(self, other):
+    if isinstance(other, Number):
+      try:
+        return self.elements[other.value], None
+      except:
+        return None, RuntimeError(other.pos_start, other.pos_end, 'Out of bounds', self.context)
+    else:
+      return None, Value.illegal_operation(self, other)
+
+  def copy(self):
+    copy = List(self.elements[:])
+    copy.set_pos(self.pos_start, self.pos_end)
+    copy.set_context(self.context)
+    return copy
+
+  def __repr__(self):
+    return f'[{". ".join([str(x) for x in self.elements])}]'
+
+
 class Function(Value):
   def __init__(self, name, body, args):
     super().__init__()
@@ -286,6 +334,17 @@ class Interpreter:
         String(node.tok.value).set_context(
             context).set_pos(node.pos_start, node.pos_end)
     )
+
+  def visit_ListNode(self, node, context):
+    res = InterpreterResult()
+    elements = []
+
+    for element_node in node.element_nodes:
+      elements.append(res.register(self.visit(element_node, context)))
+      if res.error:
+        return res
+
+    return res.success(List(elements).set_context(context).set_pos(node.pos_start, node.pos_end))
 
   def visit_VariableAccessNode(self, node, context):
     res = InterpreterResult()

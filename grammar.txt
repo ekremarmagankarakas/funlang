@@ -17,10 +17,13 @@ function_call   : atom(expr(, expr)*)
 
 atom            : INT|FLOAT|IDENT|STRING
                 : LPAREN expr RPAREN
+                : list_expr
                 : if_expr
                 : for_expr
                 : while_expr
                 : function_declaration
+
+list_expr       : '[' (expr (',' expr)*)? ']'
 
 if_expr         : IF expr { expr }
                 : (ELIF expr { expr })*
