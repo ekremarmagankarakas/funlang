@@ -25,6 +25,6 @@ def run(file_name, source):
   result = interpreter.visit(ast.node, context)
 
   if result.error:
-    None, ast.node, tokens, result.error
+    return None, ast.node, tokens, result.error
 
   return result.value, ast.node, tokens, result.error
