@@ -1,5 +1,5 @@
 from error import RuntimeError
-from token import Token, KEYWORDS, SYMBOLS, TT_EOF, TT_INT, TT_FLOAT, TT_STRING, TT_IDENT, TT_PLUS, TT_MINUS, TT_MULTIPLY, TT_DIVIDE, TT_POWER, TT_LPAREN, TT_RPAREN, TT_LBRACE, TT_RBRACE, TT_LBRACKET, TT_RBRACKET, TT_COMMA, TT_SEMICOLON, TT_EQUALS, TK_FUN, TK_YELL, TK_VAR, TT_EQUALS, TT_EE, TT_NE, TT_LT, TT_GT, TT_GTE, TT_LTE, TK_NOT, TK_OR, TK_AND, TK_IF, TK_ELSE
+from token import Token, TokenType as TT, KeywordType as TK
 
 
 class Value:
@@ -384,31 +384,31 @@ class Interpreter:
 
     error = None
     result = None
-    if node.op.type == TT_PLUS:
+    if node.op.type == TT.PLUS:
       result, error = left.added_to(right)
-    elif node.op.type == TT_MINUS:
+    elif node.op.type == TT.MINUS:
       result, error = left.subtracted_by(right)
-    elif node.op.type == TT_MULTIPLY:
+    elif node.op.type == TT.MULTIPLY:
       result, error = left.multiplied_by(right)
-    elif node.op.type == TT_DIVIDE:
+    elif node.op.type == TT.DIVIDE:
       result, error = left.divided_by(right)
-    elif node.op.type == TT_POWER:
+    elif node.op.type == TT.POWER:
       result, error = left.powered_by(right)
-    elif node.op.type == TT_EE:
+    elif node.op.type == TT.EE:
       result, error = left.comparison_equals(right)
-    elif node.op.type == TT_NE:
+    elif node.op.type == TT.NE:
       result, error = left.comparison_not_equals(right)
-    elif node.op.type == TT_LT:
+    elif node.op.type == TT.LT:
       result, error = left.comparison_less_than(right)
-    elif node.op.type == TT_GT:
+    elif node.op.type == TT.GT:
       result, error = left.comparison_greater_than(right)
-    elif node.op.type == TT_LTE:
+    elif node.op.type == TT.LTE:
       result, error = left.comparison_less_than_or_equals(right)
-    elif node.op.type == TT_GTE:
+    elif node.op.type == TT.GTE:
       result, error = left.comparison_greater_than_or_equals(right)
-    elif node.op.type == TK_AND:
+    elif node.op.type == TK.AND:
       result, error = left.anded_with(right)
-    elif node.op.type == TK_OR:
+    elif node.op.type == TK.OR:
       result, error = left.ored_with(right)
 
     if error:
@@ -423,11 +423,11 @@ class Interpreter:
       return res
     error = None
     if isinstance(right, Number):
-      if node.op.type == TT_MINUS:
+      if node.op.type == TT.MINUS:
         number, error = right.multiplied_by(Number(-1))
-      elif node.op.type == TT_PLUS:
+      elif node.op.type == TT.PLUS:
         number, error = right.added_to(Number(0))
-      elif node.op.type == TK_NOT:
+      elif node.op.type == TK.NOT:
         number, error = right.notted()
       if error:
         return res.failure(error)

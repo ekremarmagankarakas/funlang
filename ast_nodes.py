@@ -168,6 +168,7 @@ class WhileNode:
   def __repr__(self):
     return f"WhileNode(condition={self.condition}, body={self.body})"
 
+
 class ListNode:
   def __init__(self, element_nodes, pos_start, pos_end):
     self.element_nodes = element_nodes

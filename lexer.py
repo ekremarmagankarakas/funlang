@@ -1,5 +1,5 @@
 from error import IllegalCharError
-from token import Token, KEYWORDS, SYMBOLS, TT_EOF, TT_INT, TT_FLOAT, TT_STRING, TT_IDENT, TT_PLUS, TT_MINUS, TT_MULTIPLY, TT_DIVIDE, TT_POWER, TT_LPAREN, TT_RPAREN, TT_LBRACE, TT_RBRACE, TT_LBRACKET, TT_RBRACKET, TT_COMMA, TT_SEMICOLON, TT_EQUALS, TT_EE, TT_NE, TT_LT, TT_GT, TT_GTE, TT_LTE, TT_ARROW
+from token import Token, TokenType as TT, KeywordType as TK
 
 
 class Position:
@@ -40,10 +40,10 @@ class Lexer:
     while self.current_char is not None and (self.current_char.isalnum() or self.current_char == '_'):
       identifier += self.current_char
       self.advance()
-    if identifier in KEYWORDS:
-      return Token(KEYWORDS[identifier], identifier)
+    if identifier in TK._value2member_map_:
+      return Token(TK[identifier.upper()], identifier)
     else:
-      return Token(TT_IDENT, identifier, pos_start, self.pos)
+      return Token(TT.IDENT, identifier, pos_start, self.pos)
 
   def read_number(self):
     num = ""
@@ -57,9 +57,9 @@ class Lexer:
       num += self.current_char
       self.advance()
     if dot_count == 0:
-      return Token(TT_INT, int(num), pos_start, self.pos)
+      return Token(TT.INT, int(num), pos_start, self.pos)
     else:
-      return Token(TT_FLOAT, float(num), pos_start, self.pos)
+      return Token(TT.FLOAT, float(num), pos_start, self.pos)
 
   def read_string(self):
     self.advance()
@@ -87,14 +87,14 @@ class Lexer:
           self.pos.copy(), self.pos.copy(), "Unterminated string literal")
 
     self.advance()
-    return Token(TT_STRING, string, pos_start, self.pos)
+    return Token(TT.STRING, string, pos_start, self.pos)
 
   def read_not_equals(self):
     self.advance()
     pos_start = self.pos.copy()
     if self.current_char == '=':
       self.advance()
-      return Token(TT_NE, '!=', pos_start, self.pos)
+      return Token(TT.NE, '!=', pos_start, self.pos)
     return IllegalCharError(pos_start, self.pos.copy(), "Expected '=' after '!'")
 
   def read_equals(self):
@@ -102,32 +102,32 @@ class Lexer:
     pos_start = self.pos.copy()
     if self.current_char == '=':
       self.advance()
-      return Token(TT_EE, '==', pos_start, self.pos)
-    return Token(TT_EQUALS, '=', pos_start, self.pos)
+      return Token(TT.EE, '==', pos_start, self.pos)
+    return Token(TT.EQUALS, '=', pos_start, self.pos)
 
   def read_less_than(self):
     self.advance()
     pos_start = self.pos.copy()
     if self.current_char == '=':
       self.advance()
-      return Token(TT_LTE, '<=', pos_start, self.pos)
-    return Token(TT_LT, '<', pos_start, self.pos)
+      return Token(TT.LTE, '<=', pos_start, self.pos)
+    return Token(TT.LT, '<', pos_start, self.pos)
 
   def read_greater_than(self):
     self.advance()
     pos_start = self.pos.copy()
     if self.current_char == '=':
       self.advance()
-      return Token(TT_GTE, '>=', pos_start, self.pos)
-    return Token(TT_GT, '>', pos_start, self.pos)
+      return Token(TT.GTE, '>=', pos_start, self.pos)
+    return Token(TT.GT, '>', pos_start, self.pos)
 
   def read_arrow_or_less_than(self):
     self.advance()
     pos_start = self.pos.copy()
     if self.current_char == '>':
       self.advance()
-      return Token(TT_ARROW, '->', pos_start, self.pos)
-    return Token(TT_MINUS, '-', pos_start, self.pos)
+      return Token(TT.ARROW, '->', pos_start, self.pos)
+    return Token(TT.MINUS, '-', pos_start, self.pos)
 
   def tokenizer(self):
     tokens = []
@@ -170,13 +170,13 @@ class Lexer:
         if isinstance(read_arrow_or_less_than, IllegalCharError):
           return [], read_arrow_or_less_than
         tokens.append(read_arrow_or_less_than)
-      elif self.current_char in SYMBOLS:
+      elif self.current_char in TT._value2member_map_:
         pos_start = self.pos.copy()
         tokens.append(
-            Token(SYMBOLS[self.current_char], self.current_char, pos_start, self.pos))
+            Token(TT._value2member_map_[self.current_char], self.current_char, pos_start, self.pos))
         self.advance()
       else:
         return [], IllegalCharError(self.pos.copy(), self.pos.copy(), self.current_char)
 
-    tokens.append(Token(TT_EOF))
+    tokens.append(Token(TT.EOF))
     return tokens, None

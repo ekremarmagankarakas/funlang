@@ -24,7 +24,4 @@ def run(file_name, source):
   context.symbol_table = global_symbol_table
   result = interpreter.visit(ast.node, context)
 
-  if result.error:
-    return None, ast.node, tokens, result.error
-
   return result.value, ast.node, tokens, result.error
