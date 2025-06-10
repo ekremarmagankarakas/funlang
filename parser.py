@@ -46,10 +46,35 @@ class Parser:
 
   def parse(self):
     res = ParseResult()
-    expr = res.register(self.parse_expression())
+    expr = res.register(self.parse_statement())
     if res.error:
       return res
     return res.success(expr)
+
+  def parse_statement(self):
+    res = ParseResult()
+    statements = []
+    pos_start = self.current_token.pos_start.copy()
+
+    while self.current_token.type == TT.SEMICOLON:
+      self.advance()
+
+    statement = res.register(self.parse_expression())
+    if res.error:
+      return res
+    statements.append(statement)
+
+    while self.current_token and self.current_token.type != TT.EOF and self.current_token.type != TT.RBRACE:
+      if self.match(TT.SEMICOLON):
+        self.advance()
+      else:
+        statement = res.register(self.parse_expression())
+        if res.error:
+          return res
+        statements.append(statement)
+
+    pos_end = statements[-1].pos_end.copy() if statements else pos_start.copy()
+    return res.success(ListNode(statements, pos_start, pos_end))
 
   def parse_function(self):
     res = ParseResult()
@@ -89,15 +114,10 @@ class Parser:
     self.advance()
 
     body = []
-    while self.current_token.type != TT.RBRACE:
-      expr = res.register(self.parse_expression())
-      if res.error:
-        return res
-      body.append(expr)
-
-    if not self.match(TT.RBRACE):
-      return res.failure(self.err("Expected '}'"))
-    self.advance()
+    statements = res.register(self.parse_statement())
+    if res.error:
+      return res
+    body = statements.element_nodes
 
     return res.success(FunctionDeclarationNode(func_name, params, body))
 
@@ -333,11 +353,10 @@ class Parser:
     self.advance()
 
     expressions = []
-    while self.current_token.type != TT.RBRACE:
-      expr = res.register(self.parse_expression())
-      if res.error:
-        return res
-      expressions.append(expr)
+    statements = res.register(self.parse_statement())
+    if res.error:
+      return res
+    expressions = statements.element_nodes
 
     if not self.match(TT.RBRACE):
       res.failure(self.err("Expected '}' after 'if' block"))
@@ -356,11 +375,10 @@ class Parser:
       self.advance()
 
       expressions = []
-      while self.current_token.type != TT.RBRACE:
-        expr = res.register(self.parse_expression())
-        if res.error:
-          return res
-        expressions.append(expr)
+      statements = res.register(self.parse_statement())
+      if res.error:
+        return res
+      expressions = statements.element_nodes
 
       if not self.match(TT.RBRACE):
         res.failure(self.err("Expected '}' after 'elif' block"))
@@ -375,11 +393,10 @@ class Parser:
         res.failure(self.err("Expected '{' after 'else' keyword"))
       self.advance()
 
-      while self.current_token.type != TT.RBRACE:
-        expr = res.register(self.parse_expression())
-        if res.error:
-          return res
-        else_case.append(expr)
+      statements = res.register(self.parse_statement())
+      if res.error:
+        return res
+      else_case = statements.element_nodes
 
       if not self.match(TT.RBRACE):
         res.failure(self.err("Expected '}' after 'else' block"))
@@ -428,11 +445,10 @@ class Parser:
     self.advance()
 
     body = []
-    while self.current_token.type != TT.RBRACE:
-      expr = res.register(self.parse_expression())
-      if res.error:
-        return res
-      body.append(expr)
+    statements = res.register(self.parse_statement())
+    if res.error:
+      return res
+    body = statements.element_nodes
 
     if not self.match(TT.RBRACE):
       res.failure(self.err("Expected '}' after 'for' loop body"))
@@ -456,11 +472,10 @@ class Parser:
     self.advance()
 
     body = []
-    while self.current_token.type != TT.RBRACE:
-      expr = res.register(self.parse_expression())
-      if res.error:
-        return res
-      body.append(expr)
+    statements = res.register(self.parse_statement())
+    if res.error:
+      return res
+    body = statements.element_nodes
 
     if not self.match(TT.RBRACE):
       res.failure(self.err("Expected '}' after 'while' loop body"))

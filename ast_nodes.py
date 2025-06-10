@@ -175,3 +175,6 @@ class ListNode:
 
     self.pos_start = pos_start
     self.pos_end = pos_end
+
+  def __repr__(self):
+    return f"ListNode(elements={self.element_nodes})"

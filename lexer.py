@@ -41,7 +41,7 @@ class Lexer:
       identifier += self.current_char
       self.advance()
     if identifier in TK._value2member_map_:
-      return Token(TK[identifier.upper()], identifier)
+      return Token(TK[identifier.upper()], identifier, pos_start, self.pos)
     else:
       return Token(TT.IDENT, identifier, pos_start, self.pos)
 

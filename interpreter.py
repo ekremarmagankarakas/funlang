@@ -302,11 +302,13 @@ class Function(BaseFunction):
     if res.error:
       return res
 
+    values = []
     for body_node in self.body:
       value = res.register(interpreter.visit(body_node, exec_ctx))
       if res.error:
         return res
-    return res.success(value)
+      values.append(value)
+    return res.success(List(values))
 
   def copy(self):
     copy = Function(self.name, self.body, self.arg_names)
