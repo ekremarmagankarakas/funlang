@@ -344,10 +344,6 @@ class Parser:
     if res.error:
       return res
 
-    if not self.match(TT.LBRACKET):
-      res.failure(self.err("Expected '['"))
-    self.advance()
-
     if not self.match(TT.LBRACE):
       res.failure(self.err("Expected '{' after 'if' condition"))
     self.advance()
