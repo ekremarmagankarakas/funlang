@@ -41,22 +41,6 @@ class FunctionCallNode:
     return f"FunctionCall(name={self.name}, args={self.args})"
 
 
-class ExpressionStatementNode:
-  def __init__(self, expression):
-    self.expression = expression
-
-  def __repr__(self):
-    return f"ExpressionStatement(expression={self.expression})"
-
-
-class PrintStatementNode:
-  def __init__(self, expression):
-    self.expression = expression
-
-  def __repr__(self):
-    return f"PrintStatement(expression={self.expression})"
-
-
 class VariableDeclarationNode:
   def __init__(self, tok, value):
     self.tok = tok
@@ -178,3 +162,32 @@ class ListNode:
 
   def __repr__(self):
     return f"ListNode(elements={self.element_nodes})"
+
+
+class ReturnNode:
+  def __init__(self, node_to_return, pos_start, pos_end):
+    self.node_to_return = node_to_return
+
+    self.pos_start = pos_start
+    self.pos_end = pos_end
+
+  def __repr__(self):
+    return f"ReturnNode(value={self.node_to_return})"
+
+
+class BreakNode:
+  def __init__(self, pos_start, pos_end):
+    self.pos_start = pos_start
+    self.pos_end = pos_end
+
+  def __repr__(self):
+    return "BreakNode()"
+
+
+class ContinueNode:
+  def __init__(self, pos_start, pos_end):
+    self.pos_start = pos_start
+    self.pos_end = pos_end
+
+  def __repr__(self):
+    return "ContinueNode()"

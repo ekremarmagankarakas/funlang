@@ -58,3 +58,4 @@ class KeywordType(Enum):
   ELSE = "else"
   FOR = "for"
   WHILE = "while"
+  RETURN = "return"

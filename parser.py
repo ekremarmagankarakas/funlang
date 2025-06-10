@@ -1,4 +1,4 @@
-from ast_nodes import Program, FunctionDeclarationNode, PrintStatementNode, VariableAccessNode, VariableDeclarationNode, BinaryOperationNode, NumberNode, ExpressionStatementNode, FunctionCallNode, UnaryOperationNode, IfNode, ForNode, WhileNode, StringNode, ListNode
+from ast_nodes import Program, FunctionDeclarationNode, VariableAccessNode, VariableDeclarationNode, BinaryOperationNode, NumberNode, FunctionCallNode, UnaryOperationNode, IfNode, ForNode, WhileNode, StringNode, ListNode, BreakNode, ContinueNode, ReturnNode
 from token import Token, TokenType as TT, KeywordType as TK
 from error import IllegalSyntaxError
 
@@ -46,12 +46,12 @@ class Parser:
 
   def parse(self):
     res = ParseResult()
-    expr = res.register(self.parse_statement())
+    statements = res.register(self.parse_statements())
     if res.error:
       return res
-    return res.success(expr)
+    return res.success(statements)
 
-  def parse_statement(self):
+  def parse_statements(self):
     res = ParseResult()
     statements = []
     pos_start = self.current_token.pos_start.copy()
@@ -76,50 +76,30 @@ class Parser:
     pos_end = statements[-1].pos_end.copy() if statements else pos_start.copy()
     return res.success(ListNode(statements, pos_start, pos_end))
 
-  def parse_function(self):
+  def parse_statement(self):
     res = ParseResult()
-    if not self.match(TK.FUN):
-      return res.failure(self.err("Expected 'fun' keyword"))
-    self.advance()
-
-    if not self.match(TT.IDENT):
-      return res.failure(self.err("Expected function name"))
-    func_name = self.current_token
-    self.advance()
-
-    if not self.match(TT.LPAREN):
-      return res.failure(self.err("Expected '('"))
-    self.advance()
-
-    params = []
-    if not self.match(TT.RPAREN):
-      if not self.match(TT.IDENT):
-        return res.failure(self.err("Expected parameter"))
-      params.append(self.current_token)
+    if self.match(TK.BREAK):
       self.advance()
+      if not self.match(TT.SEMICOLON):
+        return res.failure(self.err("Expected ';' after 'break' statement"))
+      self.advance()
+      return res.success(BreakNode(self.current_token.pos_start, self.current_token.pos_end))
+    elif self.match(TK.CONTINUE):
+      self.advance()
+      if not self.match(TT.SEMICOLON):
+        return res.failure(self.err("Expected ';' after 'continue' statement"))
+      self.advance()
+      return res.success(ContinueNode(self.current_token.pos_start, self.current_token.pos_end))
+    elif self.match(TK.RETURN):
+      self.advance()
+      expr = res.register(self.parse_expression())
+      self.advance()
+      return res.success(ReturnNode(expr, self.current_token.pos_start, self.current_token.pos_end))
 
-      while self.match(TT.COMMA):
-        self.advance()
-        if not self.match(TT.IDENT):
-          return res.failure(self.err("Expected parameter after ','"))
-        params.append(self.current_token)
-        self.advance()
-
-    if not self.match(TT.RPAREN):
-      return res.failure(self.err("Expected ')'"))
-    self.advance()
-
-    if not self.match(TT.LBRACE):
-      return res.failure(self.err("Expected '{'"))
-    self.advance()
-
-    body = []
-    statements = res.register(self.parse_statement())
+    expr = res.register(self.parse_expression())
     if res.error:
       return res
-    body = statements.element_nodes
-
-    return res.success(FunctionDeclarationNode(func_name, params, body))
+    return res.success(expr)
 
   def parse_expression(self):
     res = ParseResult()
@@ -349,7 +329,7 @@ class Parser:
     self.advance()
 
     expressions = []
-    statements = res.register(self.parse_statement())
+    statements = res.register(self.parse_statements())
     if res.error:
       return res
     expressions = statements.element_nodes
@@ -371,7 +351,7 @@ class Parser:
       self.advance()
 
       expressions = []
-      statements = res.register(self.parse_statement())
+      statements = res.register(self.parse_statements())
       if res.error:
         return res
       expressions = statements.element_nodes
@@ -389,7 +369,7 @@ class Parser:
         res.failure(self.err("Expected '{' after 'else' keyword"))
       self.advance()
 
-      statements = res.register(self.parse_statement())
+      statements = res.register(self.parse_statements())
       if res.error:
         return res
       else_case = statements.element_nodes
@@ -441,7 +421,7 @@ class Parser:
     self.advance()
 
     body = []
-    statements = res.register(self.parse_statement())
+    statements = res.register(self.parse_statements())
     if res.error:
       return res
     body = statements.element_nodes
@@ -468,7 +448,7 @@ class Parser:
     self.advance()
 
     body = []
-    statements = res.register(self.parse_statement())
+    statements = res.register(self.parse_statements())
     if res.error:
       return res
     body = statements.element_nodes
@@ -478,3 +458,52 @@ class Parser:
     self.advance()
 
     return res.success(WhileNode(condition, body))
+
+  def parse_function(self):
+    res = ParseResult()
+    if not self.match(TK.FUN):
+      return res.failure(self.err("Expected 'fun' keyword"))
+    self.advance()
+
+    if not self.match(TT.IDENT):
+      return res.failure(self.err("Expected function name"))
+    func_name = self.current_token
+    self.advance()
+
+    if not self.match(TT.LPAREN):
+      return res.failure(self.err("Expected '('"))
+    self.advance()
+
+    params = []
+    if not self.match(TT.RPAREN):
+      if not self.match(TT.IDENT):
+        return res.failure(self.err("Expected parameter"))
+      params.append(self.current_token)
+      self.advance()
+
+      while self.match(TT.COMMA):
+        self.advance()
+        if not self.match(TT.IDENT):
+          return res.failure(self.err("Expected parameter after ','"))
+        params.append(self.current_token)
+        self.advance()
+
+    if not self.match(TT.RPAREN):
+      return res.failure(self.err("Expected ')'"))
+    self.advance()
+
+    if not self.match(TT.LBRACE):
+      return res.failure(self.err("Expected '{'"))
+    self.advance()
+
+    body = []
+    statements = res.register(self.parse_statements())
+    if res.error:
+      return res
+    body = statements.element_nodes
+
+    if not self.match(TT.RBRACE):
+      return res.failure(self.err("Expected '}'"))
+    self.advance()
+
+    return res.success(FunctionDeclarationNode(func_name, params, body))
