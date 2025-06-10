@@ -1,8 +1,9 @@
 from lexer import Lexer
 from parser import Parser
-from interpreter import Interpreter, Context, SymbolTable, Number
+from interpreter import Interpreter, Context, SymbolTable, Number, BuiltInFunction
 
 global_symbol_table = SymbolTable()
+global_symbol_table.set("print", BuiltInFunction("print"))
 global_symbol_table.set("null", Number(0))
 global_symbol_table.set("false", Number(0))
 global_symbol_table.set("true", Number(1))
