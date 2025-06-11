@@ -310,7 +310,7 @@ class Function(BaseFunction):
       if res.should_return():
         return res
       values.append(value)
-    
+
     return res.success(values[-1] if values else Number.null)
 
   def copy(self):
@@ -604,10 +604,22 @@ class Interpreter:
     step_value = step_value.value
 
     while (step_value > 0 and current_value < end_value) or (step_value < 0 and current_value > end_value):
+      should_continue = False
+      
       for expr in node.body:
         res.register(self.visit(expr, context))
+        if res.loop_should_continue:
+          res.loop_should_continue = False
+          should_continue = True
+          break
+        if res.loop_should_break:
+          break
         if res.should_return():
           return res
+
+      if res.loop_should_break:
+        break
+
       current_value += step_value
       context.symbol_table.set(node.var_name.value, Number(current_value))
 
@@ -623,8 +635,19 @@ class Interpreter:
         break
       for expr in node.body:
         res.register(self.visit(expr, context))
+        if res.loop_should_continue:
+          continue
+        if res.loop_should_break:
+          break
         if res.should_return():
           return res
+
+      if res.loop_should_break:
+        break
+
+      if res.loop_should_continue:
+        res.loop_should_continue = False
+
     return res.success(None)
 
   def visit_FunctionDeclarationNode(self, node, context):
@@ -643,13 +666,19 @@ class Interpreter:
 
   def visit_ReturnNode(self, node, context):
     res = InterpreterResult()
-    
+
     value = res.register(self.visit(node.node_to_return, context))
     if res.should_return():
       return res
-      
+
     return res.success_return(value)
-    
+
+  def visit_BreakNode(self, node, context):
+    return InterpreterResult().success_break()
+
+  def visit_ContinueNode(self, node, context):
+    return InterpreterResult().success_continue()
+
   def visit_FunctionCallNode(self, node, context):
     res = InterpreterResult()
     args = []
