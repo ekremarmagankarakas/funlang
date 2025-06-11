@@ -59,7 +59,7 @@ class Parser:
     while self.current_token.type == TT.SEMICOLON:
       self.advance()
 
-    statement = res.register(self.parse_expression())
+    statement = res.register(self.parse_statement())
     if res.error:
       return res
     statements.append(statement)
@@ -68,7 +68,7 @@ class Parser:
       if self.match(TT.SEMICOLON):
         self.advance()
       else:
-        statement = res.register(self.parse_expression())
+        statement = res.register(self.parse_statement())
         if res.error:
           return res
         statements.append(statement)
@@ -91,10 +91,16 @@ class Parser:
       self.advance()
       return res.success(ContinueNode(self.current_token.pos_start, self.current_token.pos_end))
     elif self.match(TK.RETURN):
+      pos_start = self.current_token.pos_start.copy()
       self.advance()
       expr = res.register(self.parse_expression())
+      if res.error:
+        return res
+      if not self.match(TT.SEMICOLON):
+        return res.failure(self.err("Expected ';' after 'return' statement"))
+      pos_end = self.current_token.pos_end.copy()
       self.advance()
-      return res.success(ReturnNode(expr, self.current_token.pos_start, self.current_token.pos_end))
+      return res.success(ReturnNode(expr, pos_start, pos_end))
 
     expr = res.register(self.parse_expression())
     if res.error:

@@ -59,3 +59,5 @@ class KeywordType(Enum):
   FOR = "for"
   WHILE = "while"
   RETURN = "return"
+  BREAK = "break"
+  CONTINUE = "continue"

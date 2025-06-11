@@ -13,11 +13,13 @@ def test(source):
   lexer = Lexer(file_name, source)
   tokens, error = lexer.tokenizer()
   if error:
+    print(f"Lexer error: {error}")
     return False
 
   parser = Parser(tokens)
   ast = parser.parse()
   if ast.error:
+    print(f"Parser error: {ast.error}")
     return False
 
   interpreter = Interpreter()
@@ -26,7 +28,7 @@ def test(source):
   result = interpreter.visit(ast.node, context)
 
   if result.error:
+    print(f"Interpreter error: {result.error}")
     return False
 
   return result.value
-
