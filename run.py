@@ -1,3 +1,4 @@
+import os
 from lexer import Lexer
 from parser import Parser
 from interpreter import Interpreter, Context, SymbolTable, Number, BuiltInFunction
@@ -26,3 +27,19 @@ def run(file_name, source):
   result = interpreter.visit(ast.node, context)
 
   return result.value, ast.node, tokens, result.error
+
+
+def run_file(file_path):
+  if not file_path.endswith('.fl'):
+    return None, None, None, "File must have a .fl extension"
+  
+  try:
+    with open(file_path, 'r') as file:
+      source = file.read()
+    
+    file_name = os.path.basename(file_path)
+    return run(file_name, source)
+  except FileNotFoundError:
+    return None, None, None, f"File '{file_path}' not found"
+  except Exception as e:
+    return None, None, None, f"Error reading file: {str(e)}"
