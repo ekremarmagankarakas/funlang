@@ -1,5 +1,5 @@
 from ast_nodes import Program, FunctionDeclarationNode, VariableAccessNode, VariableDeclarationNode, BinaryOperationNode, NumberNode, FunctionCallNode, UnaryOperationNode, IfNode, ForNode, WhileNode, StringNode, ListNode, BreakNode, ContinueNode, ReturnNode
-from token import Token, TokenType as TT, KeywordType as TK
+from token import Token, TokenType as TT, KeywordType as TK, BuiltInFunctionType as BT
 from error import IllegalSyntaxError
 
 
@@ -249,7 +249,7 @@ class Parser:
     elif self.current_token.type == TT.STRING:
       self.advance()
       return res.success(StringNode(tok))
-    elif self.match(TT.IDENT):
+    elif self.match(TT.IDENT) or self.current_token.type in BT:
       self.advance()
       return res.success(VariableAccessNode(tok))
     elif self.match(TT.LPAREN):

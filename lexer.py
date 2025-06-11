@@ -1,5 +1,5 @@
 from error import IllegalCharError
-from token import Token, TokenType as TT, KeywordType as TK
+from token import Token, TokenType as TT, KeywordType as TK, BuiltInFunctionType as BT
 
 
 class Position:
@@ -34,14 +34,19 @@ class Lexer:
     self.current_char = self.source[self.pos.index] if self.pos.index < len(
         self.source) else None
 
+  def get_keyword_token(self, keyword):
+    keywordtoken = next((token for token in TK if token.value == keyword), None)
+    builtintoken = next((token for token in BT if token.value == keyword), None)
+    return keywordtoken or builtintoken or None
+    
   def read_identifier(self):
     identifier = ""
     pos_start = self.pos.copy()
     while self.current_char is not None and (self.current_char.isalnum() or self.current_char == '_'):
       identifier += self.current_char
       self.advance()
-    if identifier in TK._value2member_map_:
-      return Token(TK[identifier.upper()], identifier, pos_start, self.pos)
+    if keyword := self.get_keyword_token(identifier):
+      return Token(keyword, identifier, pos_start, self.pos)
     else:
       return Token(TT.IDENT, identifier, pos_start, self.pos)
 

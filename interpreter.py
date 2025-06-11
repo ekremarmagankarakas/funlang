@@ -1,6 +1,6 @@
 import math
 from error import RuntimeError
-from token import Token, TokenType as TT, KeywordType as TK
+from token import TokenType as TT, KeywordType as TK
 
 
 class Value:

@@ -48,7 +48,6 @@ class TokenType(Enum):
 
 class KeywordType(Enum):
   FUN = "fun"
-  YELL = "yell"
   VAR = "var"
   AND = "and"
   OR = "or"
@@ -61,3 +60,6 @@ class KeywordType(Enum):
   RETURN = "return"
   BREAK = "break"
   CONTINUE = "continue"
+
+class BuiltInFunctionType(Enum):
+  PRINT = "print"
