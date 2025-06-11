@@ -1,4 +1,4 @@
-from ast_nodes import Program, FunctionDeclarationNode, VariableAccessNode, VariableDeclarationNode, BinaryOperationNode, NumberNode, FunctionCallNode, UnaryOperationNode, IfNode, ForNode, WhileNode, StringNode, ListNode, BreakNode, ContinueNode, ReturnNode
+from ast_nodes import Program, FunctionDeclarationNode, VariableAccessNode, VariableDeclarationNode, VariableAssignmentNode, BinaryOperationNode, NumberNode, FunctionCallNode, UnaryOperationNode, IfNode, ForNode, WhileNode, StringNode, ListNode, BreakNode, ContinueNode, ReturnNode
 from token import Token, TokenType as TT, KeywordType as TK, BuiltInFunctionType as BT
 from error import IllegalSyntaxError
 
@@ -148,7 +148,16 @@ class Parser:
       left = res.register(self.parse_arithmetic_expression())
       if res.error:
         return res
-      while self.current_token and self.current_token.type in (TT.EQUALS, TT.EE, TT.NE, TT.LT, TT.GT, TT.GTE, TT.LTE):
+      
+      if self.current_token and self.current_token.type == TT.EQUALS and isinstance(left, VariableAccessNode):
+        var_token = left.tok
+        self.advance()
+        value = res.register(self.parse_expression())
+        if res.error:
+          return res
+        return res.success(VariableAssignmentNode(var_token, value))
+      
+      while self.current_token and self.current_token.type in (TT.EE, TT.NE, TT.LT, TT.GT, TT.GTE, TT.LTE):
         op = self.current_token
         self.advance()
         right = res.register(self.parse_arithmetic_expression())

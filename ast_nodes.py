@@ -53,6 +53,18 @@ class VariableDeclarationNode:
     return f"VariableDeclaration(name={self.tok.value}, value={self.value})"
 
 
+class VariableAssignmentNode:
+  def __init__(self, tok, value):
+    self.tok = tok
+    self.value = value
+
+    self.pos_start = tok.pos_start
+    self.pos_end = tok.pos_end
+
+  def __repr__(self):
+    return f"VariableAssignment(name={self.tok.value}, value={self.value})"
+
+
 class VariableAccessNode:
   def __init__(self, tok):
     self.tok = tok

@@ -499,6 +499,24 @@ class Interpreter:
       return res
     context.symbol_table.set(var_name, value)
     return res.success(value)
+    
+  def visit_VariableAssignmentNode(self, node, context):
+    res = InterpreterResult()
+    var_name = node.tok.value
+    value = res.register(self.visit(node.value, context))
+    if res.should_return():
+      return res
+      
+    existing_value = context.symbol_table.get(var_name)
+    if existing_value is None:
+      return res.failure(RuntimeError(
+          node.pos_start, node.pos_end,
+          f"Variable '{var_name}' not defined",
+          context,
+      ))
+      
+    context.symbol_table.set(var_name, value)
+    return res.success(value)
 
   def visit_BinaryOperationNode(self, node, context):
     res = InterpreterResult()
