@@ -475,15 +475,15 @@ class Parser:
     return res.success(WhileNode(condition, body))
 
   def parse_function(self):
+    func_name = None
     res = ParseResult()
     if not self.match(TK.FUN):
       return res.failure(self.err("Expected 'fun' keyword"))
     self.advance()
 
-    if not self.match(TT.IDENT):
-      return res.failure(self.err("Expected function name"))
-    func_name = self.current_token
-    self.advance()
+    if self.match(TT.IDENT):
+      func_name = self.current_token
+      self.advance()
 
     if not self.match(TT.LPAREN):
       return res.failure(self.err("Expected '('"))

@@ -1,4 +1,5 @@
 import math
+import os
 from error import RuntimeError
 from token import TokenType as TT, KeywordType as TK
 
@@ -361,6 +362,31 @@ class BuiltInFunction(BaseFunction):
     return InterpreterResult().success(Number.null)
   execute_print.arg_names = ['value']
 
+  def execute_clear(self, exec_ctx):
+    os.system('cls' if os.name == 'nt' else 'cls')
+    return InterpreterResult().success(Number.null)
+  execute_clear.arg_names = []
+
+  def execute_is_number(self, exec_ctx):
+    is_number = isinstance(exec_ctx.symbol_table.get("value"), Number)
+    return InterpreterResult().success(Number.true if is_number else Number.false)
+  execute_is_number.arg_names = ["value"]
+
+  def execute_is_string(self, exec_ctx):
+    is_number = isinstance(exec_ctx.symbol_table.get("value"), String)
+    return InterpreterResult().success(Number.true if is_number else Number.false)
+  execute_is_string.arg_names = ["value"]
+
+  def execute_is_list(self, exec_ctx):
+    is_number = isinstance(exec_ctx.symbol_table.get("value"), List)
+    return InterpreterResult().success(Number.true if is_number else Number.false)
+  execute_is_list.arg_names = ["value"]
+
+  def execute_is_fun(self, exec_ctx):
+    is_number = isinstance(exec_ctx.symbol_table.get("value"), BaseFunction)
+    return InterpreterResult().success(Number.true if is_number else Number.false)
+  execute_is_fun.arg_names = ["value"]
+
 
 class Context:
   def __init__(self, display_name, parent=None, parent_entry_pos=None):
@@ -499,14 +525,14 @@ class Interpreter:
       return res
     context.symbol_table.set(var_name, value)
     return res.success(value)
-    
+
   def visit_VariableAssignmentNode(self, node, context):
     res = InterpreterResult()
     var_name = node.tok.value
     value = res.register(self.visit(node.value, context))
     if res.should_return():
       return res
-      
+
     existing_value = context.symbol_table.get(var_name)
     if existing_value is None:
       return res.failure(RuntimeError(
@@ -514,7 +540,7 @@ class Interpreter:
           f"Variable '{var_name}' not defined",
           context,
       ))
-      
+
     context.symbol_table.set(var_name, value)
     return res.success(value)
 
@@ -623,7 +649,7 @@ class Interpreter:
 
     while (step_value > 0 and current_value < end_value) or (step_value < 0 and current_value > end_value):
       should_continue = False
-      
+
       for expr in node.body:
         res.register(self.visit(expr, context))
         if res.loop_should_continue:

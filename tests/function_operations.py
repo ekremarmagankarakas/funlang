@@ -25,3 +25,7 @@ var result = max(10, 5);
 result
 """
 assert test(function_return_test2).elements[-1].value == 10
+
+var_function_test2 = "var f = fun(x) { return x * 2; }; f(4)"
+assert test(var_function_test2).elements[-1].value == 8
+

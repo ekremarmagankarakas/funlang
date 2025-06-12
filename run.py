@@ -6,6 +6,11 @@ from interpreter import Interpreter, Context, SymbolTable, Number, BuiltInFuncti
 
 global_symbol_table = SymbolTable()
 global_symbol_table.set(BT.PRINT.value, BuiltInFunction("print"))
+global_symbol_table.set(BT.CLEAR.value, BuiltInFunction("clear"))
+global_symbol_table.set(BT.IS_STRING.value, BuiltInFunction("is_string"))
+global_symbol_table.set(BT.IS_NUMBER.value, BuiltInFunction("is_number"))
+global_symbol_table.set(BT.IS_FUN.value, BuiltInFunction("is_fun"))
+global_symbol_table.set(BT.IS_LIST.value, BuiltInFunction("is_list"))
 global_symbol_table.set("null", Number(0))
 global_symbol_table.set("false", Number(0))
 global_symbol_table.set("true", Number(1))

@@ -63,3 +63,8 @@ class KeywordType(Enum):
 
 class BuiltInFunctionType(Enum):
   PRINT = "print"
+  CLEAR = "clear"
+  IS_STRING = "is_string"
+  IS_NUMBER = "is_number"
+  IS_LIST = "is_list"
+  IS_FUN = "is_fun"
