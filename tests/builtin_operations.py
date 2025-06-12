@@ -19,3 +19,6 @@ is_fun_test = 'var f = fun(x) { return x; }; is_fun(f);'
 is_fun_test2 = 'var f = 42; is_fun(f);'
 assert test(is_fun_test).elements[-1].value == 1
 assert test(is_fun_test2).elements[-1].value == 0
+
+len_test = 'var l = [1, 2, 3]; len(l);'
+assert test(len_test).elements[-1].value == 3

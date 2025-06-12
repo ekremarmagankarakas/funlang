@@ -387,6 +387,19 @@ class BuiltInFunction(BaseFunction):
     return InterpreterResult().success(Number.true if is_number else Number.false)
   execute_is_fun.arg_names = ["value"]
 
+  def execute_len(self, exec_ctx):
+    list_ = exec_ctx.symbol_table.get("list")
+
+    if not isinstance(list_, List):
+      return InterpreterResult().failure(RuntimeError(
+          self.pos_start, self.pos_end,
+          "Argument must be list",
+          exec_ctx
+      ))
+
+    return InterpreterResult().success(Number(len(list_.elements)))
+  execute_len.arg_names = ["list"]
+
 
 class Context:
   def __init__(self, display_name, parent=None, parent_entry_pos=None):

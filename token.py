@@ -61,6 +61,7 @@ class KeywordType(Enum):
   BREAK = "break"
   CONTINUE = "continue"
 
+
 class BuiltInFunctionType(Enum):
   PRINT = "print"
   CLEAR = "clear"
@@ -68,3 +69,4 @@ class BuiltInFunctionType(Enum):
   IS_NUMBER = "is_number"
   IS_LIST = "is_list"
   IS_FUN = "is_fun"
+  LEN = "len"
