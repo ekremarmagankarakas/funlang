@@ -400,6 +400,91 @@ class BuiltInFunction(BaseFunction):
     return InterpreterResult().success(Number(len(list_.elements)))
   execute_len.arg_names = ["list"]
 
+  def execute_to_string(self, exec_ctx):
+    value = exec_ctx.symbol_table.get("value")
+    return InterpreterResult().success(String(str(value)))
+  execute_to_string.arg_names = ["value"]
+
+  def execute_to_int(self, exec_ctx):
+    value = exec_ctx.symbol_table.get("value")
+    res = InterpreterResult()
+    
+    try:
+      if isinstance(value, Number):
+        return res.success(Number(int(value.value)))
+      elif isinstance(value, String):
+        try:
+          return res.success(Number(int(value.value)))
+        except ValueError:
+          return res.failure(RuntimeError(
+              self.pos_start, self.pos_end,
+              f"Cannot convert '{value.value}' to an integer",
+              exec_ctx
+          ))
+      else:
+        return res.failure(RuntimeError(
+            self.pos_start, self.pos_end,
+            f"Cannot convert {type(value).__name__} to an integer",
+            exec_ctx
+        ))
+    except Exception as e:
+      return res.failure(RuntimeError(
+          self.pos_start, self.pos_end,
+          f"Error converting to integer: {str(e)}",
+          exec_ctx
+      ))
+  execute_to_int.arg_names = ["value"]
+
+  def execute_to_float(self, exec_ctx):
+    value = exec_ctx.symbol_table.get("value")
+    res = InterpreterResult()
+    
+    try:
+      if isinstance(value, Number):
+        return res.success(Number(float(value.value)))
+      elif isinstance(value, String):
+        try:
+          return res.success(Number(float(value.value)))
+        except ValueError:
+          return res.failure(RuntimeError(
+              self.pos_start, self.pos_end,
+              f"Cannot convert '{value.value}' to a float",
+              exec_ctx
+          ))
+      else:
+        return res.failure(RuntimeError(
+            self.pos_start, self.pos_end,
+            f"Cannot convert {type(value).__name__} to a float",
+            exec_ctx
+        ))
+    except Exception as e:
+      return res.failure(RuntimeError(
+          self.pos_start, self.pos_end,
+          f"Error converting to float: {str(e)}",
+          exec_ctx
+      ))
+  execute_to_float.arg_names = ["value"]
+
+  def execute_to_list(self, exec_ctx):
+    value = exec_ctx.symbol_table.get("value")
+    res = InterpreterResult()
+    
+    try:
+      if isinstance(value, List):
+        return res.success(value)
+      elif isinstance(value, String):
+        elements = [String(char) for char in value.value]
+        return res.success(List(elements).set_context(exec_ctx))
+      else:
+        return res.success(List([value]).set_context(exec_ctx))
+    except Exception as e:
+      return res.failure(RuntimeError(
+          self.pos_start, self.pos_end,
+          f"Error converting to list: {str(e)}",
+          exec_ctx
+      ))
+  execute_to_list.arg_names = ["value"]
+
 
 class Context:
   def __init__(self, display_name, parent=None, parent_entry_pos=None):

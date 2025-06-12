@@ -70,3 +70,7 @@ class BuiltInFunctionType(Enum):
   IS_LIST = "is_list"
   IS_FUN = "is_fun"
   LEN = "len"
+  TO_STRING = "to_string"
+  TO_INT = "to_int"
+  TO_FLOAT = "to_float"
+  TO_LIST = "to_list"
