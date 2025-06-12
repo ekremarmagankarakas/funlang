@@ -1,6 +1,6 @@
 statements      : SEMICOLON* expr (SEMICOLON+ expr)* NEWLINE*
 
-expr            : KEYWORD:VAR IDENT EQUALS expr
+expr            : KEYWORD:VAR type_annotation IDENT EQUALS expr
                 : comparison_expr (('and' | 'or') comparison_expr)*
 
 comparison_expr : not comparison_expr
@@ -36,4 +36,6 @@ for_expr        : FOR IDENT '=' expr ',' expr { expr }
 while_expr      : WHILE expr { expr }
 
 function_declaration : fun (atom)* '(' (expr (, expr)*)* ')' '{' expr '}'
+
+type_annotation : 'int' | 'float' | 'string' | 'list'
 

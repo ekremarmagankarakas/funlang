@@ -49,6 +49,10 @@ class TokenType(Enum):
 class KeywordType(Enum):
   FUN = "fun"
   VAR = "var"
+  INT_TYPE = "int"
+  FLOAT_TYPE = "float"
+  STRING_TYPE = "string"
+  LIST_TYPE = "list"
   AND = "and"
   OR = "or"
   NOT = "not"
@@ -74,3 +78,4 @@ class BuiltInFunctionType(Enum):
   TO_INT = "to_int"
   TO_FLOAT = "to_float"
   TO_LIST = "to_list"
+  TYPEOF = "typeof"

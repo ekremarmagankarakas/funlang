@@ -111,17 +111,21 @@ class Parser:
     res = ParseResult()
     if self.match(TK.VAR):
       self.advance()
+      type_tok = None
+      if self.current_token.type in (TK.INT_TYPE, TK.FLOAT_TYPE, TK.STRING_TYPE, TK.LIST_TYPE):
+        type_tok = self.current_token
+        self.advance()
       var_name = self.current_token
       if not self.match(TT.IDENT):
-        return res.failure(self.err("Expected 'IDENT' after variable declaration"))
+        return res.failure(self.err("Expected 'IDENT' after type annotation"))
       self.advance()
       if not self.match(TT.EQUALS):
-        res.failure(self.err("Expected '=' after variable name"))
+        return res.failure(self.err("Expected '=' after variable name"))
       self.advance()
       expr = res.register(self.parse_expression())
       if res.error:
         return res
-      return res.success(VariableDeclarationNode(var_name, expr))
+      return res.success(VariableDeclarationNode(type_tok, var_name, expr))
     else:
       left = res.register(self.parse_comparison_expression())
       if res.error:

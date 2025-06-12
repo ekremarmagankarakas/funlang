@@ -485,6 +485,27 @@ class BuiltInFunction(BaseFunction):
       ))
   execute_to_list.arg_names = ["value"]
 
+  def execute_typeof(self, exec_ctx):
+    value = exec_ctx.symbol_table.get("value")
+    if isinstance(value, Number):
+      if isinstance(value.value, int):
+        type_name = "int"
+      elif isinstance(value.value, float):
+        type_name = "float"
+      else:
+        type_name = "number"
+    elif isinstance(value, String):
+      type_name = "string"
+    elif isinstance(value, List):
+      type_name = "list"
+    elif isinstance(value, BaseFunction):
+      type_name = "function"
+    else:
+      type_name = "unknown"
+    
+    return InterpreterResult().success(String(type_name))
+  execute_typeof.arg_names = ["value"]
+
 
 class Context:
   def __init__(self, display_name, parent=None, parent_entry_pos=None):
@@ -621,8 +642,41 @@ class Interpreter:
     value = res.register(self.visit(node.value, context))
     if res.should_return():
       return res
+    
+    if node.type_tok:
+      expected_type = node.type_tok.value
+      if not self.type_matches(value, expected_type):
+        return res.failure(RuntimeError(
+          node.pos_start, node.pos_end,
+          f"Type mismatch: expected {expected_type}, got {self.get_type_name(value)}",
+          context
+        ))
+    
     context.symbol_table.set(var_name, value)
     return res.success(value)
+  
+  def type_matches(self, value, expected_type):
+    if expected_type == "int":
+      return isinstance(value, Number) and isinstance(value.value, int)
+    elif expected_type == "float":
+      return isinstance(value, Number) and isinstance(value.value, float)
+    elif expected_type == "string":
+      return isinstance(value, String)
+    elif expected_type == "list":
+      return isinstance(value, List)
+    return True
+  
+  def get_type_name(self, value):
+    if isinstance(value, Number):
+      if isinstance(value.value, int):
+        return "int"
+      elif isinstance(value.value, float):
+        return "float"
+    elif isinstance(value, String):
+      return "string"
+    elif isinstance(value, List):
+      return "list"
+    return "unknown"
 
   def visit_VariableAssignmentNode(self, node, context):
     res = InterpreterResult()

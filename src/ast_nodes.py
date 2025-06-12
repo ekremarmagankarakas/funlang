@@ -42,15 +42,16 @@ class FunctionCallNode:
 
 
 class VariableDeclarationNode:
-  def __init__(self, tok, value):
+  def __init__(self, type_tok, tok, value):
+    self.type_tok = type_tok
     self.tok = tok
     self.value = value
 
-    self.pos_start = tok.pos_start
+    self.pos_start = type_tok.pos_start if type_tok else tok.pos_start
     self.pos_end = tok.pos_end
 
   def __repr__(self):
-    return f"VariableDeclaration(name={self.tok.value}, value={self.value})"
+    return f"VariableDeclaration(type={self.type_tok.value if self.type_tok else None}, name={self.tok.value}, value={self.value})"
 
 
 class VariableAssignmentNode:
