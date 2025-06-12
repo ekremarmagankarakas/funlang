@@ -1,6 +1,6 @@
-from ast_nodes import Program, FunctionDeclarationNode, VariableAccessNode, VariableDeclarationNode, VariableAssignmentNode, BinaryOperationNode, NumberNode, FunctionCallNode, UnaryOperationNode, IfNode, ForNode, WhileNode, StringNode, ListNode, BreakNode, ContinueNode, ReturnNode
-from token import Token, TokenType as TT, KeywordType as TK, BuiltInFunctionType as BT
-from error import IllegalSyntaxError
+from src.ast_nodes import Program, FunctionDeclarationNode, VariableAccessNode, VariableDeclarationNode, VariableAssignmentNode, BinaryOperationNode, NumberNode, FunctionCallNode, UnaryOperationNode, IfNode, ForNode, WhileNode, StringNode, ListNode, BreakNode, ContinueNode, ReturnNode
+from src.token import Token, TokenType as TT, KeywordType as TK, BuiltInFunctionType as BT
+from src.error import IllegalSyntaxError
 
 
 class ParseResult:

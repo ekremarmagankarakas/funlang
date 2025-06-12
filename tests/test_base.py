@@ -1,7 +1,7 @@
-from lexer import Lexer
-from parser import Parser
-from interpreter import Interpreter, Context, SymbolTable, Number, BuiltInFunction
-from token import BuiltInFunctionType as BT
+from src.lexer import Lexer
+from src.parser import Parser
+from src.interpreter import Interpreter, Context, SymbolTable, Number, BuiltInFunction
+from src.token import BuiltInFunctionType as BT
 
 global_symbol_table = SymbolTable()
 global_symbol_table.set(BT.PRINT.value, BuiltInFunction("print"))

@@ -1,5 +1,5 @@
-from error import IllegalCharError
-from token import Token, TokenType as TT, KeywordType as TK, BuiltInFunctionType as BT
+from src.error import IllegalCharError
+from src.token import Token, TokenType as TT, KeywordType as TK, BuiltInFunctionType as BT
 
 
 class Position:

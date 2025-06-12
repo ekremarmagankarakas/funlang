@@ -1,7 +1,7 @@
 import math
 import os
-from error import RuntimeError
-from token import TokenType as TT, KeywordType as TK
+from src.error import RuntimeError
+from src.token import TokenType as TT, KeywordType as TK
 
 
 class Value:

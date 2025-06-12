@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import sys
 from run import run_file, run
 
