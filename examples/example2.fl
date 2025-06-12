@@ -5,10 +5,9 @@ fun binarysearch(target, nums) {
 
   while l <= r {
     var mid = (l + r) / 2;
-    to_int(mid);
-    print(mid);
+    mid = to_int(mid);
     if nums / mid == target {
-      return target;
+      return mid;
     }
     elif nums / mid < target {
       l = mid + 1;
@@ -20,4 +19,5 @@ fun binarysearch(target, nums) {
   return -1;
 }
 
-binarysearch(10, [3, 4, 10, 12, 14]);
+print(binarysearch(10, [3, 4, 10, 12, 14]));
+print(binarysearch(3, [3, 4, 10, 12, 14]));
