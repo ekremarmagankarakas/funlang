@@ -54,6 +54,14 @@ fun add(a, b) {
 var result = add(5, 3);
 ```
 
+#### Types
+```
+var int num = 42;
+var float pi = 3.14;
+var string hello = "hello world!";
+var list l = [1, 2, 3, 4, 5]
+```
+
 ### Control Flow
 
 #### If Statements
@@ -126,6 +134,7 @@ var chars = to_list("hello");  // Creates a list of characters
 - `to_int(value)`: Convert value to integer
 - `to_float(value)`: Convert value to float
 - `to_list(value)`: Convert value to list
+- `typeof(value)`: Get the type of value
 
 ## Running FunLang Programs
 
