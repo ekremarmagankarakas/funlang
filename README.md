@@ -155,6 +155,7 @@ FunLang is implemented in Python with a classic interpreter design:
 ## References
 
 https://github.com/davidcallanan/py-myopl-code
+https://ruslanspivak.com/lsbasi-part1/
 
 ## License
 
