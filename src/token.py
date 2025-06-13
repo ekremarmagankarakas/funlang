@@ -79,3 +79,4 @@ class BuiltInFunctionType(Enum):
   TO_FLOAT = "to_float"
   TO_LIST = "to_list"
   TYPEOF = "typeof"
+  ELOS = "elos"

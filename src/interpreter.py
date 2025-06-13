@@ -506,6 +506,11 @@ class BuiltInFunction(BaseFunction):
     return InterpreterResult().success(String(type_name))
   execute_typeof.arg_names = ["value"]
 
+  def execute_elos(self, exec_ctx):
+    print("I love my wife, Elos!")
+    return InterpreterResult().success(Number.null)
+  execute_elos.arg_names = []
+
 
 class Context:
   def __init__(self, display_name, parent=None, parent_entry_pos=None):
