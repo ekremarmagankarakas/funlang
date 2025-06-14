@@ -68,6 +68,8 @@ assert test(notted_test3).elements[0].value == 0
 
 negative_test = "-5"
 negative_test2 = "var x = -5; x;"
+negative_test3 = "-2 * 3"
 assert test(negative_test).elements[0].value == -5
 assert test(negative_test2).elements[0].value == -5
+assert test(negative_test3).elements[0].value == -6
 

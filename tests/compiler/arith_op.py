@@ -30,6 +30,8 @@ notted_test = "print(not 0);"
 notted_test2 = "print(not 1);"
 notted_test3 = "print(not 2);"
 negative_test = "var x = -5; print(x);"
+negative_test2 = "print(-5);"
+negative_test3 = "print(-2 * 3);"
 
 arith_tests = (
     f"{arithmetic_test}\n"
@@ -60,6 +62,8 @@ arith_tests = (
     f"{notted_test2}\n"
     f"{notted_test3}"
     f"{negative_test}\n"
+    f"{negative_test2}\n"
+    f"{negative_test3}\n"
 )
 
 expected_arith_output = (
@@ -91,6 +95,8 @@ expected_arith_output = (
     "0\n"   # not 1        (false)
     "0\n"   # not 2        (false)
     "-5\n"  # var x = -5; print(x);
+    "-5\n"  # print(-5);
+    "-6\n"  # print(-2 * 3
 )
 
 
