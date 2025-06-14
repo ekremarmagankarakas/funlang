@@ -281,4 +281,13 @@ class CodeGenerator:
     else:
       raise Exception(f"Cannot convert {value.type} to boolean")
 
+  def visit_UnaryOperationNode(self, node):
+    operand = self.visit(node.right)
+  
+    if node.op.type == KeywordType.NOT:
+      operand_bool = self._to_boolean(operand)
+      return self.builder.not_(operand_bool)
+  
+    raise Exception(f"Unsupported unary operator: {node.op.type}")
+
 
