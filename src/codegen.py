@@ -27,6 +27,7 @@ class CodeGenerator:
     self.int_type = ir.IntType(64)
     self.float_type = ir.DoubleType()
     self.char_ptr_type = ir.IntType(8).as_pointer()
+    self.bool_type = ir.IntType(1)
 
     # Declare printf function
     printf_func_type = ir.FunctionType(
@@ -139,7 +140,7 @@ class CodeGenerator:
           ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
 
       self.builder.call(self.printf_func, [fmt_ptr, arg])
-    elif arg.type == ir.IntType(1):
+    elif arg.type == self.bool_type:
       # Print boolean as integer (0 or 1)
       arg = self.builder.zext(arg, self.int_type)  # zero-extend to i64
 
