@@ -9,7 +9,7 @@ def run_compiled_code(llvm_ir):
     f.write(llvm_ir)
 
   subprocess.run(['llc', '-filetype=obj', 'temp.ll', '-o', 'temp.o'])
-  subprocess.run(['clang', 'temp.o', '-o', 'temp_executable'])
+  subprocess.run(['clang', 'temp.o', '-o', 'temp_executable', '-lm'])
 
   result = subprocess.run(['./temp_executable'],
                           capture_output=True, text=True)

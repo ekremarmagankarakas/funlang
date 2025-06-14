@@ -80,38 +80,38 @@ def compile_file(file_path):
 
 def build_executable(file_path):
   import subprocess
-  
+
   if not file_path.endswith('.fl'):
     return None,
-  
+
   try:
     llvm_ir, ast, tokens, error = compile_file(file_path)
     if error:
       return None, error
-    
+
     base_name = file_path.replace('.fl', '')
     ll_file = f"{base_name}.ll"
     obj_file = f"{base_name}.o"
     exe_file = base_name
-    
+
     with open(ll_file, 'w') as f:
       f.write(llvm_ir)
-    
-    llc_result = subprocess.run(['llc', '-filetype=obj', ll_file, '-o', obj_file], 
-                               capture_output=True, text=True)
+
+    llc_result = subprocess.run(['llc', '-filetype=obj', ll_file, '-o', obj_file],
+                                capture_output=True, text=True)
     if llc_result.returncode != 0:
       return None, f"LLC error: {llc_result.stderr}"
-    
-    clang_result = subprocess.run(['clang', obj_file, '-o', exe_file], 
-                                 capture_output=True, text=True)
+
+    clang_result = subprocess.run(['clang', obj_file, '-o', exe_file, '-lm'],
+                                  capture_output=True, text=True)
     if clang_result.returncode != 0:
       return None, f"Clang error: {clang_result.stderr}"
-    
+
     os.remove(ll_file)
     os.remove(obj_file)
-    
+
     return exe_file, None
-    
+
   except FileNotFoundError:
     return None, f"File '{file_path}' not found"
   except Exception as e:

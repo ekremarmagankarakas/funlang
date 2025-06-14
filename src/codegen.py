@@ -29,6 +29,10 @@ class CodeGenerator:
     self.char_ptr_type = ir.IntType(8).as_pointer()
     self.bool_type = ir.IntType(1)
 
+    # Declare double pow(double, double)
+    pow_type = ir.FunctionType(self.float_type, [self.float_type, self.float_type])
+    self.pow_func = ir.Function(self.module, pow_type, name="pow")
+
     # Declare printf function
     printf_func_type = ir.FunctionType(
         ir.IntType(32), [self.char_ptr_type], var_arg=True)
@@ -218,6 +222,11 @@ class CodeGenerator:
         return self.builder.mul(left, right)
       elif node.op.type == TokenType.DIVIDE:
         return self.builder.sdiv(left, right)
+      elif node.op.type == TokenType.POWER:
+        left = self.builder.sitofp(left, self.float_type)
+        right = self.builder.sitofp(right, self.float_type)
+        result = self.builder.call(self.pow_func, [left, right])
+        return self.builder.fptosi(result, self.int_type)
       elif node.op.type == TokenType.EE:
         return self.builder.icmp_signed("==", left, right)
       elif node.op.type == TokenType.NE:
@@ -240,6 +249,8 @@ class CodeGenerator:
         return self.builder.fmul(left, right)
       elif node.op.type == TokenType.DIVIDE:
         return self.builder.fdiv(left, right)
+      elif node.op.type == TokenType.POWER:
+        return self.builder.call(self.pow_func, [left, right])
       elif node.op.type == TokenType.EE:
         return self.builder.fcmp_ordered("==", left, right)
       elif node.op.type == TokenType.NE:

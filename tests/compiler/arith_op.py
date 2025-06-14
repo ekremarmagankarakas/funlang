@@ -35,7 +35,7 @@ arith_tests = (f"{arithmetic_test}\n"
                f"{remove_test}\n"
                f"{multiply_test}\n"
                f"{divide_test}\n"
-               # f"{powered_test}\n"
+               f"{powered_test}\n"
                f"{comparison_equals_test}\n"
                f"{comparison_equals_test2}\n"
                f"{comparison_not_equals_test}\n"
@@ -65,7 +65,7 @@ expected_arith_output = (
     "3\n"   # 5 - 2
     "15\n"  # 3 * 5
     "7\n"   # 21 / 3
-    # "9\n"   # 3 ^ 2   (power)
+    "9\n"   # 3 ^ 2   (power)
     "1\n"   # 3 == 3
     "0\n"   # 3 == 4
     "1\n"   # 3 != 4
