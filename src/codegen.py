@@ -1,7 +1,7 @@
 from llvmlite import ir, binding
 import llvmlite.binding as llvm
 from src.token import TokenType, KeywordType
-from src.ast_nodes import NumberNode, BinaryOperationNode, ListNode, FunctionCallNode, StringNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode
+from src.ast_nodes import NumberNode, BinaryOperationNode, ListNode, FunctionCallNode, StringNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode, IfNode, UnaryOperationNode
 
 
 class CodeGenerator:
@@ -54,7 +54,7 @@ class CodeGenerator:
       last_result = None
       for stmt in ast_node.element_nodes:
         # Process supported node types
-        if isinstance(stmt, (NumberNode, BinaryOperationNode, FunctionCallNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode)):
+        if isinstance(stmt, (NumberNode, BinaryOperationNode, FunctionCallNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode, IfNode, UnaryOperationNode)):
           last_result = self.visit(stmt)
     else:
       last_result = self.visit(ast_node)
@@ -301,3 +301,50 @@ class CodeGenerator:
         raise Exception(f"Unary '-' not supported for type {operand.type}")
 
     raise Exception(f"Unsupported unary operator: {node.op.type}")
+
+  def visit_IfNode(self, node):
+    # Handle multiple elif cases
+    current_block = self.builder.block
+    merge_block = self.main_func.append_basic_block('if_merge')
+    
+    # Process all if/elif cases
+    for i, (condition_node, body_statements) in enumerate(node.cases):
+      # Create blocks for this condition
+      then_block = self.main_func.append_basic_block(f'if_then_{i}')
+      next_block = self.main_func.append_basic_block(f'if_next_{i}') if i < len(node.cases) - 1 or node.else_case else merge_block
+      
+      # Generate condition
+      condition = self.visit(condition_node)
+      
+      # Convert condition to boolean if needed
+      condition_bool = self._to_boolean(condition)
+      
+      # Branch based on condition
+      self.builder.cbranch(condition_bool, then_block, next_block)
+      
+      # Generate then block
+      self.builder.position_at_end(then_block)
+      for stmt in body_statements:
+        self.visit(stmt)
+      
+      # Jump to merge block if not terminated
+      if not self.builder.block.is_terminated:
+        self.builder.branch(merge_block)
+      
+      # Continue with next condition if there are more cases
+      if i < len(node.cases) - 1 or node.else_case:
+        self.builder.position_at_end(next_block)
+    
+    # Handle else case if present
+    if node.else_case:
+      for stmt in node.else_case:
+        self.visit(stmt)
+      
+      # Jump to merge block if not terminated
+      if not self.builder.block.is_terminated:
+        self.builder.branch(merge_block)
+    
+    # Continue with merge block
+    self.builder.position_at_end(merge_block)
+    
+    return ir.Constant(self.int_type, 0)
