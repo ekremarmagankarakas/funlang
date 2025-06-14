@@ -1,7 +1,7 @@
 from llvmlite import ir, binding
 import llvmlite.binding as llvm
 from src.token import TokenType
-from src.ast_nodes import NumberNode, BinaryOperationNode, ListNode, FunctionCallNode, StringNode
+from src.ast_nodes import NumberNode, BinaryOperationNode, ListNode, FunctionCallNode, StringNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode
 
 
 class CodeGenerator:
@@ -46,7 +46,7 @@ class CodeGenerator:
       last_result = None
       for stmt in ast_node.element_nodes:
         # Process supported node types
-        if isinstance(stmt, (NumberNode, BinaryOperationNode, FunctionCallNode)):
+        if isinstance(stmt, (NumberNode, BinaryOperationNode, FunctionCallNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode)):
           last_result = self.visit(stmt)
     else:
       last_result = self.visit(ast_node)
@@ -130,6 +130,43 @@ class CodeGenerator:
     
     # Return void/null
     return ir.Constant(self.int_type, 0)
+
+  def visit_VariableDeclarationNode(self, node):
+    var_name = node.tok.value
+    value = self.visit(node.value)
+    
+    # Allocate space for the variable in the entry block
+    with self.builder.goto_entry_block():
+      var_ptr = self.builder.alloca(value.type, name=var_name)
+    
+    # Store the value
+    self.builder.store(value, var_ptr)
+    
+    # Keep track of the variable
+    self.local_vars[var_name] = var_ptr
+    
+    return value
+
+  def visit_VariableAccessNode(self, node):
+    var_name = node.tok.value
+    
+    if var_name not in self.local_vars:
+      raise Exception(f"Variable '{var_name}' not defined")
+    
+    var_ptr = self.local_vars[var_name]
+    return self.builder.load(var_ptr, name=var_name)
+
+  def visit_VariableAssignmentNode(self, node):
+    var_name = node.tok.value
+    value = self.visit(node.value)
+    
+    if var_name not in self.local_vars:
+      raise Exception(f"Variable '{var_name}' not defined")
+    
+    var_ptr = self.local_vars[var_name]
+    self.builder.store(value, var_ptr)
+    
+    return value
 
   def visit_BinaryOperationNode(self, node):
     left = self.visit(node.left)
