@@ -1,4 +1,4 @@
-from tests.test_base import test
+from tests.interpreter.test_base import test
 
 var_test = "var x = 5; x"
 var_test_result = test(var_test)

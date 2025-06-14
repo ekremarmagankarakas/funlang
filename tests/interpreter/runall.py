@@ -1,0 +1,8 @@
+import tests.interpreter.list_operations
+import tests.interpreter.arith_operations
+import tests.interpreter.if_operations
+import tests.interpreter.for_operations
+import tests.interpreter.function_operations
+import tests.interpreter.var_operations
+import tests.interpreter.builtin_operations
+import tests.interpreter.cast_operations

@@ -1,4 +1,4 @@
-from tests.test_base import test
+from tests.interpreter.test_base import test
 
 list_test = "[]"
 assert test(list_test).elements[0].elements == []

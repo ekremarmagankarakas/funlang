@@ -1,4 +1,4 @@
-from tests.test_base import test
+from tests.interpreter.test_base import test
 
 addition_test = "4 + 3"
 assert test(addition_test).elements[0].value == 7

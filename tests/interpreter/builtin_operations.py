@@ -1,4 +1,4 @@
-from tests.test_base import test
+from tests.interpreter.test_base import test
 
 is_string_test = 'var s = "Hello, World!"; is_string(s);'
 is_string_test2 = 'var s = 123; is_string(s);'

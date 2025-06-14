@@ -1,4 +1,4 @@
-from tests.test_base import test
+from tests.interpreter.test_base import test
 
 function_test = "fun add(a, b) { a + b; }; add(2, 3)"
 assert test(function_test).elements[-1].value == 5
