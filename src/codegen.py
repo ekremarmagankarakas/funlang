@@ -29,8 +29,10 @@ class CodeGenerator:
     self.char_ptr_type = ir.IntType(8).as_pointer()
 
     # Declare printf function
-    printf_func_type = ir.FunctionType(ir.IntType(32), [self.char_ptr_type], var_arg=True)
-    self.printf_func = ir.Function(self.module, printf_func_type, name="printf")
+    printf_func_type = ir.FunctionType(
+        ir.IntType(32), [self.char_ptr_type], var_arg=True)
+    self.printf_func = ir.Function(
+        self.module, printf_func_type, name="printf")
 
     # Create main function
     func_type = ir.FunctionType(self.int_type, [])
@@ -74,11 +76,13 @@ class CodeGenerator:
   def visit_StringNode(self, node):
     # Create a global string constant
     string_val = node.tok.value + '\0'  # Null terminate
-    string_const = ir.Constant(ir.ArrayType(ir.IntType(8), len(string_val)), bytearray(string_val.encode('utf-8')))
-    string_global = ir.GlobalVariable(self.module, string_const.type, name=f"str_{len(self.module.globals)}")
+    string_const = ir.Constant(ir.ArrayType(ir.IntType(8), len(
+        string_val)), bytearray(string_val.encode('utf-8')))
+    string_global = ir.GlobalVariable(
+        self.module, string_const.type, name=f"str_{len(self.module.globals)}")
     string_global.initializer = string_const
     string_global.global_constant = True
-    
+
     # Get pointer to the string
     return self.builder.gep(string_global, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
 
@@ -86,86 +90,109 @@ class CodeGenerator:
     if node.name.tok.value == "print":
       return self.handle_print_call(node)
     else:
-      raise Exception(f"Function '{node.name.tok.value}' not supported in codegen yet")
+      raise Exception(
+          f"Function '{node.name.tok.value}' not supported in codegen yet")
 
   def handle_print_call(self, node):
     if len(node.args) != 1:
       raise Exception("print() expects exactly one argument")
-    
+
     arg = self.visit(node.args[0])
-    
+
     # Handle different argument types
     if arg.type == self.int_type:
       # Print integer with format "%ld\n"
+      fmt_str = "%ld\n\0"
+      fmt_const = ir.Constant(ir.ArrayType(ir.IntType(
+          8), len(fmt_str)), bytearray(fmt_str.encode('utf-8')))
+      fmt_global = ir.GlobalVariable(
+          self.module, fmt_const.type, name=f"fmt_{len(self.module.globals)}")
+      fmt_global.initializer = fmt_const
+      fmt_global.global_constant = True
+      fmt_ptr = self.builder.gep(fmt_global, [ir.Constant(
+          ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+
+      self.builder.call(self.printf_func, [fmt_ptr, arg])
+    elif arg.type == self.float_type:
+      # Print float with format "%.6f\n"
+      fmt_str = "%.6f\n\0"
+      fmt_const = ir.Constant(ir.ArrayType(ir.IntType(
+          8), len(fmt_str)), bytearray(fmt_str.encode('utf-8')))
+      fmt_global = ir.GlobalVariable(
+          self.module, fmt_const.type, name=f"fmt_{len(self.module.globals)}")
+      fmt_global.initializer = fmt_const
+      fmt_global.global_constant = True
+      fmt_ptr = self.builder.gep(fmt_global, [ir.Constant(
+          ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+
+      self.builder.call(self.printf_func, [fmt_ptr, arg])
+    elif arg.type == self.char_ptr_type:
+      # Print string with format "%s\n"
+      fmt_str = "%s\n\0"
+      fmt_const = ir.Constant(ir.ArrayType(ir.IntType(
+          8), len(fmt_str)), bytearray(fmt_str.encode('utf-8')))
+      fmt_global = ir.GlobalVariable(
+          self.module, fmt_const.type, name=f"fmt_{len(self.module.globals)}")
+      fmt_global.initializer = fmt_const
+      fmt_global.global_constant = True
+      fmt_ptr = self.builder.gep(fmt_global, [ir.Constant(
+          ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+
+      self.builder.call(self.printf_func, [fmt_ptr, arg])
+    elif arg.type == ir.IntType(1):
+      # Print boolean as integer (0 or 1)
+      arg = self.builder.zext(arg, self.int_type)  # zero-extend to i64
+
+      # Then print as integer
       fmt_str = "%ld\n\0"
       fmt_const = ir.Constant(ir.ArrayType(ir.IntType(8), len(fmt_str)), bytearray(fmt_str.encode('utf-8')))
       fmt_global = ir.GlobalVariable(self.module, fmt_const.type, name=f"fmt_{len(self.module.globals)}")
       fmt_global.initializer = fmt_const
       fmt_global.global_constant = True
       fmt_ptr = self.builder.gep(fmt_global, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
-      
-      self.builder.call(self.printf_func, [fmt_ptr, arg])
-    elif arg.type == self.float_type:
-      # Print float with format "%.6f\n"
-      fmt_str = "%.6f\n\0"
-      fmt_const = ir.Constant(ir.ArrayType(ir.IntType(8), len(fmt_str)), bytearray(fmt_str.encode('utf-8')))
-      fmt_global = ir.GlobalVariable(self.module, fmt_const.type, name=f"fmt_{len(self.module.globals)}")
-      fmt_global.initializer = fmt_const
-      fmt_global.global_constant = True
-      fmt_ptr = self.builder.gep(fmt_global, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
-      
-      self.builder.call(self.printf_func, [fmt_ptr, arg])
-    elif arg.type == self.char_ptr_type:
-      # Print string with format "%s\n"
-      fmt_str = "%s\n\0"
-      fmt_const = ir.Constant(ir.ArrayType(ir.IntType(8), len(fmt_str)), bytearray(fmt_str.encode('utf-8')))
-      fmt_global = ir.GlobalVariable(self.module, fmt_const.type, name=f"fmt_{len(self.module.globals)}")
-      fmt_global.initializer = fmt_const
-      fmt_global.global_constant = True
-      fmt_ptr = self.builder.gep(fmt_global, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
-      
+
       self.builder.call(self.printf_func, [fmt_ptr, arg])
     else:
       raise Exception(f"Cannot print type: {arg.type}")
-    
+
     # Return void/null
     return ir.Constant(self.int_type, 0)
 
   def visit_VariableDeclarationNode(self, node):
     var_name = node.tok.value
     value = self.visit(node.value)
-    
+
     # Allocate space for the variable in the entry block
     with self.builder.goto_entry_block():
       var_ptr = self.builder.alloca(value.type, name=var_name)
-    
+
     # Store the value
     self.builder.store(value, var_ptr)
-    
+
     # Keep track of the variable
     self.local_vars[var_name] = var_ptr
-    
+
     return value
 
   def visit_VariableAccessNode(self, node):
     var_name = node.tok.value
-    
+
     if var_name not in self.local_vars:
       raise Exception(f"Variable '{var_name}' not defined")
-    
+
     var_ptr = self.local_vars[var_name]
     return self.builder.load(var_ptr, name=var_name)
 
   def visit_VariableAssignmentNode(self, node):
     var_name = node.tok.value
     value = self.visit(node.value)
-    
+
     if var_name not in self.local_vars:
       raise Exception(f"Variable '{var_name}' not defined")
-    
+
     var_ptr = self.local_vars[var_name]
     self.builder.store(value, var_ptr)
-    
+
     return value
 
   def visit_BinaryOperationNode(self, node):
@@ -190,6 +217,19 @@ class CodeGenerator:
         return self.builder.mul(left, right)
       elif node.op.type == TokenType.DIVIDE:
         return self.builder.sdiv(left, right)
+      elif node.op.type == TokenType.EE:
+        return self.builder.icmp_signed("==", left, right)
+      elif node.op.type == TokenType.NE:
+        return self.builder.icmp_signed("!=", left, right)
+      elif node.op.type == TokenType.LT:
+        return self.builder.icmp_signed("<", left, right)
+      elif node.op.type == TokenType.GT:
+        return self.builder.icmp_signed(">", left, right)
+      elif node.op.type == TokenType.LTE:
+        return self.builder.icmp_signed("<=", left, right)
+      elif node.op.type == TokenType.GTE:
+        return self.builder.icmp_signed(">=", left, right)
+
     elif result_type == self.float_type:
       if node.op.type == TokenType.PLUS:
         return self.builder.fadd(left, right)
@@ -199,5 +239,16 @@ class CodeGenerator:
         return self.builder.fmul(left, right)
       elif node.op.type == TokenType.DIVIDE:
         return self.builder.fdiv(left, right)
-
+      elif node.op.type == TokenType.EE:
+        return self.builder.fcmp_ordered("==", left, right)
+      elif node.op.type == TokenType.NE:
+        return self.builder.fcmp_ordered("!=", left, right)
+      elif node.op.type == TokenType.LT:
+        return self.builder.fcmp_ordered("<", left, right)
+      elif node.op.type == TokenType.GT:
+        return self.builder.fcmp_ordered(">", left, right)
+      elif node.op.type == TokenType.LTE:
+        return self.builder.fcmp_ordered("<=", left, right)
+      elif node.op.type == TokenType.GTE:
+        return self.builder.fcmp_ordered(">=", left, right)
     raise Exception(f"Unsupported binary operation: {node.op.type}")

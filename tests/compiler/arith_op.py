@@ -36,22 +36,22 @@ arith_tests = (f"{arithmetic_test}\n"
                f"{multiply_test}\n"
                f"{divide_test}\n"
                # f"{powered_test}\n"
-               # f"{comparison_equals_test}\n"
-               # f"{comparison_equals_test2}\n"
-               # f"{comparison_not_equals_test}\n"
-               # f"{comparison_not_equals_test2}\n"
-               # f"{comparison_less_than_test}\n"
-               # f"{comparison_less_than_test2}\n"
-               # f"{comparison_less_than_test3}\n"
-               # f"{comparison_greater_than_test}\n"
-               # f"{comparison_greater_than_test2}\n"
-               # f"{comparison_greater_than_test3}\n"
-               # f"{comparison_less_than_or_equals_test}\n"
-               # f"{comparison_less_than_or_equals_test2}\n"
-               # f"{comparison_less_than_or_equals_test3}\n"
-               # f"{comparison_greater_than_or_equals_test}\n"
-               # f"{comparison_greater_than_or_equals_test2}\n"
-               # f"{comparison_greater_than_or_equals_test3}\n"
+               f"{comparison_equals_test}\n"
+               f"{comparison_equals_test2}\n"
+               f"{comparison_not_equals_test}\n"
+               f"{comparison_not_equals_test2}\n"
+               f"{comparison_less_than_test}\n"
+               f"{comparison_less_than_test2}\n"
+               f"{comparison_less_than_test3}\n"
+               f"{comparison_greater_than_test}\n"
+               f"{comparison_greater_than_test2}\n"
+               f"{comparison_greater_than_test3}\n"
+               f"{comparison_less_than_or_equals_test}\n"
+               f"{comparison_less_than_or_equals_test2}\n"
+               f"{comparison_less_than_or_equals_test3}\n"
+               f"{comparison_greater_than_or_equals_test}\n"
+               f"{comparison_greater_than_or_equals_test2}\n"
+               f"{comparison_greater_than_or_equals_test3}\n"
                # f"{anded_with_test}\n"
                # f"{ored_with_test}\n"
                # f"{notted_test}\n"
@@ -66,22 +66,22 @@ expected_arith_output = (
     "15\n"  # 3 * 5
     "7\n"   # 21 / 3
     # "9\n"   # 3 ^ 2   (power)
-    # "1\n"   # 3 == 3
-    # "0\n"   # 3 == 4
-    # "1\n"   # 3 != 4
-    # "0\n"   # 3 != 3
-    # "1\n"   # 3 < 4
-    # "0\n"   # 3 < 3
-    # "0\n"   # 3 < 2
-    # "1\n"   # 4 > 3
-    # "0\n"   # 4 > 4
-    # "0\n"   # 4 > 5
-    # "1\n"   # 3 <= 4
-    # "1\n"   # 3 <= 3
-    # "0\n"   # 3 <= 2
-    # "1\n"   # 3 >= 2
-    # "1\n"   # 3 >= 3
-    # "0\n"   # 3 >= 4
+    "1\n"   # 3 == 3
+    "0\n"   # 3 == 4
+    "1\n"   # 3 != 4
+    "0\n"   # 3 != 3
+    "1\n"   # 3 < 4
+    "0\n"   # 3 < 3
+    "0\n"   # 3 < 2
+    "1\n"   # 4 > 3
+    "0\n"   # 4 > 4
+    "0\n"   # 4 > 5
+    "1\n"   # 3 <= 4
+    "1\n"   # 3 <= 3
+    "0\n"   # 3 <= 2
+    "1\n"   # 3 >= 2
+    "1\n"   # 3 >= 3
+    "0\n"   # 3 >= 4
     # "1\n"   # 2 and 3      (both truthy)
     # "1\n"   # 0 or 4       (one truthy)
     # "1\n"   # not 0        (true)
