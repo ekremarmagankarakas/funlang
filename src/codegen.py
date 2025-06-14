@@ -1,7 +1,7 @@
 from llvmlite import ir, binding
 import llvmlite.binding as llvm
 from src.token import TokenType, KeywordType
-from src.ast_nodes import NumberNode, BinaryOperationNode, ListNode, FunctionCallNode, StringNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode, IfNode, UnaryOperationNode
+from src.ast_nodes import NumberNode, BinaryOperationNode, ListNode, FunctionCallNode, StringNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode, IfNode, UnaryOperationNode, ForNode, WhileNode
 
 
 class CodeGenerator:
@@ -54,7 +54,7 @@ class CodeGenerator:
       last_result = None
       for stmt in ast_node.element_nodes:
         # Process supported node types
-        if isinstance(stmt, (NumberNode, BinaryOperationNode, FunctionCallNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode, IfNode, UnaryOperationNode)):
+        if isinstance(stmt, (NumberNode, BinaryOperationNode, FunctionCallNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode, IfNode, UnaryOperationNode, ForNode, WhileNode)):
           last_result = self.visit(stmt)
     else:
       last_result = self.visit(ast_node)
@@ -346,5 +346,102 @@ class CodeGenerator:
     
     # Continue with merge block
     self.builder.position_at_end(merge_block)
+    
+    return ir.Constant(self.int_type, 0)
+
+  def visit_ForNode(self, node):
+    # Generate start, end, and step values
+    start_val = self.visit(node.start)
+    end_val = self.visit(node.end)
+    step_val = self.visit(node.step) if node.step else ir.Constant(self.int_type, 1)
+    
+    # Ensure all values are integers
+    if start_val.type != self.int_type:
+      start_val = self.builder.fptosi(start_val, self.int_type) if start_val.type == self.float_type else start_val
+    if end_val.type != self.int_type:
+      end_val = self.builder.fptosi(end_val, self.int_type) if end_val.type == self.float_type else end_val
+    if step_val.type != self.int_type:
+      step_val = self.builder.fptosi(step_val, self.int_type) if step_val.type == self.float_type else step_val
+    
+    # Allocate loop variable
+    loop_var_ptr = self.builder.alloca(self.int_type, name=node.var_name.value)
+    self.builder.store(start_val, loop_var_ptr)
+    
+    # Save old variable if it exists
+    old_var = self.local_vars.get(node.var_name.value)
+    self.local_vars[node.var_name.value] = loop_var_ptr
+    
+    # Create basic blocks
+    loop_cond_block = self.main_func.append_basic_block('for_cond')
+    loop_body_block = self.main_func.append_basic_block('for_body')
+    loop_incr_block = self.main_func.append_basic_block('for_incr') 
+    loop_end_block = self.main_func.append_basic_block('for_end')
+    
+    # Jump to condition check
+    self.builder.branch(loop_cond_block)
+    
+    # Loop condition block
+    self.builder.position_at_end(loop_cond_block)
+    current_val = self.builder.load(loop_var_ptr, name=node.var_name.value)
+    condition = self.builder.icmp_signed('<', current_val, end_val)
+    self.builder.cbranch(condition, loop_body_block, loop_end_block)
+    
+    # Loop body block
+    self.builder.position_at_end(loop_body_block)
+    for stmt in node.body:
+      self.visit(stmt)
+    
+    # Jump to increment block if not terminated
+    if not self.builder.block.is_terminated:
+      self.builder.branch(loop_incr_block)
+    
+    # Loop increment block
+    self.builder.position_at_end(loop_incr_block)
+    current_val = self.builder.load(loop_var_ptr, name=node.var_name.value)
+    incremented_val = self.builder.add(current_val, step_val)
+    self.builder.store(incremented_val, loop_var_ptr)
+    self.builder.branch(loop_cond_block)
+    
+    # Loop end block
+    self.builder.position_at_end(loop_end_block)
+    
+    # Restore old variable or remove from scope
+    if old_var:
+      self.local_vars[node.var_name.value] = old_var
+    else:
+      del self.local_vars[node.var_name.value]
+    
+    return ir.Constant(self.int_type, 0)
+
+  def visit_WhileNode(self, node):
+    # Create basic blocks
+    loop_cond_block = self.main_func.append_basic_block('while_cond')
+    loop_body_block = self.main_func.append_basic_block('while_body')
+    loop_end_block = self.main_func.append_basic_block('while_end')
+    
+    # Jump to condition check
+    self.builder.branch(loop_cond_block)
+    
+    # Loop condition block
+    self.builder.position_at_end(loop_cond_block)
+    condition = self.visit(node.condition)
+    
+    # Convert condition to boolean if needed
+    condition_bool = self._to_boolean(condition)
+    
+    # Branch based on condition
+    self.builder.cbranch(condition_bool, loop_body_block, loop_end_block)
+    
+    # Loop body block
+    self.builder.position_at_end(loop_body_block)
+    for stmt in node.body:
+      self.visit(stmt)
+    
+    # Jump back to condition check if not terminated
+    if not self.builder.block.is_terminated:
+      self.builder.branch(loop_cond_block)
+    
+    # Loop end block
+    self.builder.position_at_end(loop_end_block)
     
     return ir.Constant(self.int_type, 0)

@@ -6,3 +6,4 @@ import tests.interpreter.function_operations
 import tests.interpreter.var_operations
 import tests.interpreter.builtin_operations
 import tests.interpreter.cast_operations
+import tests.interpreter.while_operations
