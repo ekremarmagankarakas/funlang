@@ -29,6 +29,7 @@ ored_with_test = "print(0 or 4);"
 notted_test = "print(not 0);"
 notted_test2 = "print(not 1);"
 notted_test3 = "print(not 2);"
+negative_test = "var x = -5; print(x);"
 
 arith_tests = (
     f"{arithmetic_test}\n"
@@ -58,6 +59,7 @@ arith_tests = (
     f"{notted_test}\n"
     f"{notted_test2}\n"
     f"{notted_test3}"
+    f"{negative_test}\n"
 )
 
 expected_arith_output = (
@@ -88,6 +90,7 @@ expected_arith_output = (
     "1\n"   # not 0        (true)
     "0\n"   # not 1        (false)
     "0\n"   # not 2        (false)
+    "-5\n"  # var x = -5; print(x);
 )
 
 

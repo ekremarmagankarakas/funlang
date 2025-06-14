@@ -30,7 +30,8 @@ class CodeGenerator:
     self.bool_type = ir.IntType(1)
 
     # Declare double pow(double, double)
-    pow_type = ir.FunctionType(self.float_type, [self.float_type, self.float_type])
+    pow_type = ir.FunctionType(
+        self.float_type, [self.float_type, self.float_type])
     self.pow_func = ir.Function(self.module, pow_type, name="pow")
 
     # Declare printf function
@@ -150,11 +151,14 @@ class CodeGenerator:
 
       # Then print as integer
       fmt_str = "%ld\n\0"
-      fmt_const = ir.Constant(ir.ArrayType(ir.IntType(8), len(fmt_str)), bytearray(fmt_str.encode('utf-8')))
-      fmt_global = ir.GlobalVariable(self.module, fmt_const.type, name=f"fmt_{len(self.module.globals)}")
+      fmt_const = ir.Constant(ir.ArrayType(ir.IntType(
+          8), len(fmt_str)), bytearray(fmt_str.encode('utf-8')))
+      fmt_global = ir.GlobalVariable(
+          self.module, fmt_const.type, name=f"fmt_{len(self.module.globals)}")
       fmt_global.initializer = fmt_const
       fmt_global.global_constant = True
-      fmt_ptr = self.builder.gep(fmt_global, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+      fmt_ptr = self.builder.gep(fmt_global, [ir.Constant(
+          ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
 
       self.builder.call(self.printf_func, [fmt_ptr, arg])
     else:
@@ -283,11 +287,17 @@ class CodeGenerator:
 
   def visit_UnaryOperationNode(self, node):
     operand = self.visit(node.right)
-  
+
     if node.op.type == KeywordType.NOT:
       operand_bool = self._to_boolean(operand)
       return self.builder.not_(operand_bool)
-  
+
+    elif node.op.type == TokenType.MINUS:
+      if operand.type == self.int_type:
+        return self.builder.neg(operand)
+      elif operand.type == self.float_type:
+        return self.builder.fneg(operand)
+      else:
+        raise Exception(f"Unary '-' not supported for type {operand.type}")
+
     raise Exception(f"Unsupported unary operator: {node.op.type}")
-
-
