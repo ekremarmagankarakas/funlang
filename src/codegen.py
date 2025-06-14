@@ -1,6 +1,6 @@
 from llvmlite import ir, binding
 import llvmlite.binding as llvm
-from src.token import TokenType
+from src.token import TokenType, KeywordType
 from src.ast_nodes import NumberNode, BinaryOperationNode, ListNode, FunctionCallNode, StringNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode
 
 
@@ -263,4 +263,22 @@ class CodeGenerator:
         return self.builder.fcmp_ordered("<=", left, right)
       elif node.op.type == TokenType.GTE:
         return self.builder.fcmp_ordered(">=", left, right)
+
+    if node.op.type == KeywordType.AND:
+      return self.builder.and_(self._to_boolean(left), self._to_boolean(right))
+    elif node.op.type == KeywordType.OR:
+      return self.builder.or_(self._to_boolean(left), self._to_boolean(right))
+
     raise Exception(f"Unsupported binary operation: {node.op.type}")
+
+  def _to_boolean(self, value):
+    if value.type == self.bool_type:
+      return value
+    elif value.type == self.int_type:
+      return self.builder.icmp_signed("!=", value, ir.Constant(self.int_type, 0))
+    elif value.type == self.float_type:
+      return self.builder.fcmp_ordered("!=", value, ir.Constant(self.float_type, 0.0))
+    else:
+      raise Exception(f"Cannot convert {value.type} to boolean")
+
+

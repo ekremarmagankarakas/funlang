@@ -52,8 +52,8 @@ arith_tests = (f"{arithmetic_test}\n"
                f"{comparison_greater_than_or_equals_test}\n"
                f"{comparison_greater_than_or_equals_test2}\n"
                f"{comparison_greater_than_or_equals_test3}\n"
-               # f"{anded_with_test}\n"
-               # f"{ored_with_test}\n"
+               f"{anded_with_test}\n"
+               f"{ored_with_test}\n"
                # f"{notted_test}\n"
                # f"{notted_test2}\n"
                # f"{notted_test3}"
@@ -82,8 +82,8 @@ expected_arith_output = (
     "1\n"   # 3 >= 2
     "1\n"   # 3 >= 3
     "0\n"   # 3 >= 4
-    # "1\n"   # 2 and 3      (both truthy)
-    # "1\n"   # 0 or 4       (one truthy)
+    "1\n"   # 2 and 3      (both truthy)
+    "1\n"   # 0 or 4       (one truthy)
     # "1\n"   # not 0        (true)
     # "0\n"   # not 1        (false)
     # "0\n"   # not 2        (false)
