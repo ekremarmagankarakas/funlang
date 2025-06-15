@@ -289,10 +289,11 @@ class BaseFunction(Value):
 
 
 class Function(BaseFunction):
-  def __init__(self, name, body, arg_names):
+  def __init__(self, name, body, arg_names, return_type=None):
     super().__init__(name)
     self.body = body
     self.arg_names = arg_names
+    self.return_type = return_type
 
   def execute(self, args):
     res = InterpreterResult()
@@ -307,6 +308,20 @@ class Function(BaseFunction):
     for body_node in self.body:
       value = res.register(interpreter.visit(body_node, exec_ctx))
       if res.func_return_value:
+        # Validate return type if function has explicit return type
+        if self.return_type:
+          return_value = res.func_return_value
+          expected_type_name = self.return_type.value
+          actual_type_name = self.get_value_type_name(return_value)
+          
+          # Check for type compatibility
+          if not self.is_type_compatible(actual_type_name, expected_type_name):
+            return res.failure(RuntimeError(
+              return_value.pos_start, return_value.pos_end,
+              f"Type mismatch: function declared to return '{expected_type_name}' but trying to return '{actual_type_name}'",
+              exec_ctx
+            ))
+        
         return res.success(res.func_return_value)
       if res.should_return():
         return res
@@ -314,8 +329,34 @@ class Function(BaseFunction):
 
     return res.success(values[-1] if values else Number.null)
 
+  def get_value_type_name(self, value):
+    """Get the type name of a value for type checking"""
+    if isinstance(value, Number):
+      if isinstance(value.value, int):
+        return "int" 
+      elif isinstance(value.value, float):
+        return "float"
+    elif isinstance(value, String):
+      return "string"
+    elif isinstance(value, List):
+      return "list"
+    return "unknown"
+  
+  def is_type_compatible(self, actual_type, expected_type):
+    """Check if the actual type is compatible with the expected type"""
+    if actual_type == expected_type:
+      return True
+    
+    # Allow automatic conversions for compatible types
+    compatible_conversions = {
+      ("int", "float"): True,
+      ("float", "int"): True,
+    }
+    
+    return compatible_conversions.get((actual_type, expected_type), False)
+
   def copy(self):
-    copy = Function(self.name, self.body, self.arg_names)
+    copy = Function(self.name, self.body, self.arg_names, self.return_type)
     copy.set_context(self.context)
     copy.set_pos(self.pos_start, self.pos_end)
     return copy
@@ -857,7 +898,7 @@ class Interpreter:
     func_name = node.name.value if node.name else None
     body_node = node.body
     arg_names = [arg_name.value for arg_name in node.args]
-    func_value = Function(func_name, body_node, arg_names).set_context(
+    func_value = Function(func_name, body_node, arg_names, node.return_type).set_context(
         context).set_pos(node.pos_start, node.pos_end)
 
     if node.name:

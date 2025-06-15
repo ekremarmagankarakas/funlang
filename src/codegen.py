@@ -549,6 +549,8 @@ class CodeGenerator:
     
     # Create function
     func = ir.Function(self.module, func_type, func_name)
+    # Store return type information for validation
+    func._funlang_return_type = node.return_type
     self.functions[func_name] = func
     
     # Save current context
@@ -610,6 +612,37 @@ class CodeGenerator:
       
       # Get expected return type from current function
       expected_type = self.current_function.return_value.type
+      
+      # Validate return type if function has explicit return type
+      if hasattr(self.current_function, '_funlang_return_type') and self.current_function._funlang_return_type:
+        # Get the expected type token
+        expected_type_token = self.current_function._funlang_return_type
+        
+        # Check if the return value type matches expected type
+        def get_value_type_name(llvm_type):
+          if llvm_type == self.int_type:
+            return "int"
+          elif llvm_type == self.float_type:
+            return "float"
+          elif llvm_type == self.char_ptr_type:
+            return "string"
+          else:
+            return str(llvm_type)
+        
+        expected_type_name = expected_type_token.value
+        actual_type_name = get_value_type_name(return_val.type)
+        
+        # Allow automatic conversions for compatible types
+        compatible_conversions = {
+          ("int", "float"): True,
+          ("float", "int"): True, 
+          ("bool", "int"): True,
+          ("bool", "float"): True,
+        }
+        
+        if actual_type_name != expected_type_name:
+          if (actual_type_name, expected_type_name) not in compatible_conversions:
+            raise Exception(f"Type mismatch: function declared to return '{expected_type_name}' but trying to return '{actual_type_name}'")
       
       # Convert return value to expected type if needed
       if return_val.type != expected_type:

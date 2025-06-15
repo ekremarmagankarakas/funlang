@@ -30,6 +30,7 @@ print(result);
 
 # var_function_test2 = "var f = fun(x) { return x * 2; }; var result = f(4); print(result);"
 
+
 function_tests = (
     f"{function_test}\n"
     f"{function_return_test}\n"
@@ -51,8 +52,24 @@ expected_function_output = (
 )
 
 llvm_ir_function = compile_test(function_tests)
-compiled_function_output, compile_function_error = run_compiled_code(llvm_ir_function)
+compiled_function_output, compile_function_error = run_compiled_code(
+    llvm_ir_function)
 assert compiled_function_output == expected_function_output.strip()
 os.remove("temp.ll")
 os.remove("temp.o")
 os.remove("temp_executable")
+
+
+function_mismatched_return = """
+fun string addfail(a, b) {
+  return a + b;
+}
+
+var result = addfail(2, 3);
+print(result);
+"""
+
+try:
+  compile_test(function_mismatched_return)
+except Exception as e:
+  assert str(e) == "Type mismatch: function declared to return 'string' but trying to return 'int'"

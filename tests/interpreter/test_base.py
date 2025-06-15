@@ -45,3 +45,27 @@ def test(source):
     return False
 
   return result.value
+
+def test_error(source):
+  file_name = '<stdin>'
+  lexer = Lexer(file_name, source)
+  tokens, error = lexer.tokenizer()
+  if error:
+    print(f"Lexer error: {error.as_string()}")
+    return True
+
+  parser = Parser(tokens)
+  ast = parser.parse()
+  if ast.error:
+    print(f"Parser error: {ast.error.as_string()}")
+    return True
+
+  interpreter = Interpreter()
+  context = Context("<program>")
+  context.symbol_table = global_symbol_table
+  result = interpreter.visit(ast.node, context)
+
+  if result.error:
+    return result.error
+
+  return False
