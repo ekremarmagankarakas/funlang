@@ -35,6 +35,11 @@ class CodeGenerator:
     self.float_type = ir.DoubleType()
     self.char_ptr_type = ir.IntType(8).as_pointer()
     self.bool_type = ir.IntType(1)
+    
+    # List type: struct containing length and pointer to elements
+    # For simplicity, all list elements are i64 (can hold int, float as bits, or pointer)
+    self.list_element_type = self.int_type
+    self.list_type = ir.LiteralStructType([self.int_type, self.list_element_type.as_pointer()])
 
     # Declare double pow(double, double)
     pow_type = ir.FunctionType(
@@ -46,6 +51,13 @@ class CodeGenerator:
         ir.IntType(32), [self.char_ptr_type], var_arg=True)
     self.printf_func = ir.Function(
         self.module, printf_func_type, name="printf")
+    
+    # Declare malloc and free for dynamic list allocation
+    malloc_func_type = ir.FunctionType(self.char_ptr_type, [self.int_type])
+    self.malloc_func = ir.Function(self.module, malloc_func_type, name="malloc")
+    
+    free_func_type = ir.FunctionType(ir.VoidType(), [self.char_ptr_type])
+    self.free_func = ir.Function(self.module, free_func_type, name="free")
 
     # Create main function
     func_type = ir.FunctionType(self.int_type, [])
@@ -60,8 +72,8 @@ class CodeGenerator:
     if isinstance(ast_node, ListNode):
       last_result = None
       for stmt in ast_node.element_nodes:
-        # Process supported node types
-        if isinstance(stmt, (NumberNode, BinaryOperationNode, FunctionCallNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode, IfNode, UnaryOperationNode, ForNode, WhileNode, BreakNode, ContinueNode, FunctionDeclarationNode, ReturnNode)):
+        # Process supported node types  
+        if isinstance(stmt, (NumberNode, BinaryOperationNode, ListNode, FunctionCallNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode, IfNode, UnaryOperationNode, ForNode, WhileNode, BreakNode, ContinueNode, FunctionDeclarationNode, ReturnNode)):
           last_result = self.visit(stmt)
     else:
       last_result = self.visit(ast_node)
@@ -99,6 +111,42 @@ class CodeGenerator:
     # Get pointer to the string
     return self.builder.gep(string_global, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
 
+  def visit_ListNode(self, node):
+    # Create list with elements
+    num_elements = len(node.element_nodes)
+    
+    # Allocate memory for list elements
+    if num_elements > 0:
+      # Allocate array for elements
+      element_size = ir.Constant(self.int_type, 8)  # 8 bytes per element (i64)
+      array_size = self.builder.mul(ir.Constant(self.int_type, num_elements), element_size)
+      elements_ptr = self.builder.call(self.malloc_func, [array_size])
+      elements_ptr = self.builder.bitcast(elements_ptr, self.list_element_type.as_pointer())
+      
+      # Store each element
+      for i, element_node in enumerate(node.element_nodes):
+        element_val = self.visit(element_node)
+        
+        # Convert element to i64 if needed
+        if element_val.type == self.float_type:
+          element_val = self.builder.bitcast(element_val, self.int_type)
+        elif element_val.type == self.bool_type:
+          element_val = self.builder.zext(element_val, self.int_type)
+        
+        # Store element at index i
+        element_ptr = self.builder.gep(elements_ptr, [ir.Constant(self.int_type, i)])
+        self.builder.store(element_val, element_ptr)
+    else:
+      # Empty list
+      elements_ptr = ir.Constant(self.list_element_type.as_pointer(), None)
+    
+    # Create list structure
+    list_struct = ir.Constant(self.list_type, ir.Undefined)
+    list_struct = self.builder.insert_value(list_struct, ir.Constant(self.int_type, num_elements), 0)
+    list_struct = self.builder.insert_value(list_struct, elements_ptr, 1)
+    
+    return list_struct
+
   def visit_FunctionCallNode(self, node):
     # Extract function name
     func_name = node.name.tok.value if hasattr(node.name, 'tok') else node.name.value
@@ -115,12 +163,17 @@ class CodeGenerator:
       args = []
       for arg_node in node.args:
         arg_val = self.visit(arg_node)
-        # Convert all arguments to int64 for simplicity
-        if arg_val.type == self.float_type:
+        # Keep lists as-is, convert other types to int64 for simplicity
+        if arg_val.type == self.list_type:
+          args.append(arg_val)
+        elif arg_val.type == self.float_type:
           arg_val = self.builder.fptosi(arg_val, self.int_type)
+          args.append(arg_val)
         elif arg_val.type == self.bool_type:
           arg_val = self.builder.zext(arg_val, self.int_type)
-        args.append(arg_val)
+          args.append(arg_val)
+        else:
+          args.append(arg_val)
       
       # Check argument count
       if len(args) != len(func.args):
@@ -194,6 +247,92 @@ class CodeGenerator:
           ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
 
       self.builder.call(self.printf_func, [fmt_ptr, arg])
+    elif arg.type == self.list_type:
+      # Print list with format "[element1, element2, ...]\n"
+      # Extract list length and elements pointer
+      list_length = self.builder.extract_value(arg, 0)
+      elements_ptr = self.builder.extract_value(arg, 1)
+      
+      # Print opening bracket
+      fmt_str = "[\0"
+      fmt_const = ir.Constant(ir.ArrayType(ir.IntType(8), len(fmt_str)), bytearray(fmt_str.encode('utf-8')))
+      fmt_global = ir.GlobalVariable(self.module, fmt_const.type, name=f"fmt_{len(self.module.globals)}")
+      fmt_global.initializer = fmt_const
+      fmt_global.global_constant = True
+      fmt_ptr = self.builder.gep(fmt_global, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+      self.builder.call(self.printf_func, [fmt_ptr])
+      
+      # Create loop to print elements
+      current_func = self.current_function if self.current_function else self.main_func
+      loop_start = current_func.append_basic_block('print_list_loop')
+      loop_body = current_func.append_basic_block('print_list_body')
+      loop_end = current_func.append_basic_block('print_list_end')
+      
+      # Create loop counter
+      with self.builder.goto_entry_block():
+        counter_ptr = self.builder.alloca(self.int_type, name="list_print_counter")
+      self.builder.store(ir.Constant(self.int_type, 0), counter_ptr)
+      
+      self.builder.branch(loop_start)
+      
+      # Loop condition
+      self.builder.position_at_end(loop_start)
+      counter = self.builder.load(counter_ptr)
+      condition = self.builder.icmp_signed('<', counter, list_length)
+      self.builder.cbranch(condition, loop_body, loop_end)
+      
+      # Loop body - print element
+      self.builder.position_at_end(loop_body)
+      counter = self.builder.load(counter_ptr)
+      
+      # Print comma separator if not first element
+      zero = ir.Constant(self.int_type, 0)
+      is_first = self.builder.icmp_signed('==', counter, zero)
+      comma_block = current_func.append_basic_block('print_comma')
+      no_comma_block = current_func.append_basic_block('no_comma')
+      self.builder.cbranch(is_first, no_comma_block, comma_block)
+      
+      # Print comma
+      self.builder.position_at_end(comma_block)
+      comma_str = ", \0"
+      comma_const = ir.Constant(ir.ArrayType(ir.IntType(8), len(comma_str)), bytearray(comma_str.encode('utf-8')))
+      comma_global = ir.GlobalVariable(self.module, comma_const.type, name=f"fmt_{len(self.module.globals)}")
+      comma_global.initializer = comma_const  
+      comma_global.global_constant = True
+      comma_ptr = self.builder.gep(comma_global, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+      self.builder.call(self.printf_func, [comma_ptr])
+      self.builder.branch(no_comma_block)
+      
+      # Print element
+      self.builder.position_at_end(no_comma_block)
+      counter = self.builder.load(counter_ptr)
+      element_ptr = self.builder.gep(elements_ptr, [counter])
+      element_val = self.builder.load(element_ptr)
+      
+      # Print element as integer
+      elem_fmt_str = "%ld\0"
+      elem_fmt_const = ir.Constant(ir.ArrayType(ir.IntType(8), len(elem_fmt_str)), bytearray(elem_fmt_str.encode('utf-8')))
+      elem_fmt_global = ir.GlobalVariable(self.module, elem_fmt_const.type, name=f"fmt_{len(self.module.globals)}")
+      elem_fmt_global.initializer = elem_fmt_const
+      elem_fmt_global.global_constant = True
+      elem_fmt_ptr = self.builder.gep(elem_fmt_global, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+      self.builder.call(self.printf_func, [elem_fmt_ptr, element_val])
+      
+      # Increment counter
+      counter = self.builder.load(counter_ptr)
+      next_counter = self.builder.add(counter, ir.Constant(self.int_type, 1))
+      self.builder.store(next_counter, counter_ptr)
+      self.builder.branch(loop_start)
+      
+      # Print closing bracket and newline
+      self.builder.position_at_end(loop_end)
+      close_str = "]\n\0"
+      close_const = ir.Constant(ir.ArrayType(ir.IntType(8), len(close_str)), bytearray(close_str.encode('utf-8')))
+      close_global = ir.GlobalVariable(self.module, close_const.type, name=f"fmt_{len(self.module.globals)}")
+      close_global.initializer = close_const
+      close_global.global_constant = True
+      close_ptr = self.builder.gep(close_global, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
+      self.builder.call(self.printf_func, [close_ptr])
     else:
       raise Exception(f"Cannot print type: {arg.type}")
 
@@ -240,6 +379,10 @@ class CodeGenerator:
   def visit_BinaryOperationNode(self, node):
     left = self.visit(node.left)
     right = self.visit(node.right)
+
+    # Handle list operations
+    if left.type == self.list_type or right.type == self.list_type:
+      return self.handle_list_operation(node.op.type, left, right)
 
     # Type promotion if needed
     if left.type != right.type:
@@ -307,6 +450,364 @@ class CodeGenerator:
       return self.builder.or_(self._to_boolean(left), self._to_boolean(right))
 
     raise Exception(f"Unsupported binary operation: {node.op.type}")
+
+  def handle_list_operation(self, op_type, left, right):
+    """Handle list-specific binary operations"""
+    if op_type == TokenType.PLUS:
+      # list + element -> append element to list
+      if left.type == self.list_type and right.type != self.list_type:
+        return self.list_append(left, right)
+      else:
+        raise Exception("List + operation requires list on left and element on right")
+    
+    elif op_type == TokenType.MULTIPLY:
+      # list * list -> concatenate lists
+      if left.type == self.list_type and right.type == self.list_type:
+        return self.list_concatenate(left, right)
+      else:
+        raise Exception("List * operation requires two lists")
+    
+    elif op_type == TokenType.MINUS:
+      # list - index -> remove element at index
+      if left.type == self.list_type and right.type == self.int_type:
+        return self.list_remove_at_index(left, right)
+      else:
+        raise Exception("List - operation requires list on left and integer index on right")
+    
+    elif op_type == TokenType.DIVIDE:
+      # list / index -> access element at index
+      if left.type == self.list_type and right.type == self.int_type:
+        return self.list_access_at_index(left, right)
+      else:
+        raise Exception("List / operation requires list on left and integer index on right")
+    
+    else:
+      raise Exception(f"Unsupported list operation: {op_type}")
+
+  def list_append(self, list_val, element):
+    """Append an element to a list (returns new list)"""
+    # Extract current list info
+    current_length = self.builder.extract_value(list_val, 0)
+    current_elements = self.builder.extract_value(list_val, 1)
+    
+    # Calculate new length
+    new_length = self.builder.add(current_length, ir.Constant(self.int_type, 1))
+    
+    # Allocate memory for new list
+    element_size = ir.Constant(self.int_type, 8)  # 8 bytes per element
+    new_array_size = self.builder.mul(new_length, element_size)
+    new_elements_ptr = self.builder.call(self.malloc_func, [new_array_size])
+    new_elements_ptr = self.builder.bitcast(new_elements_ptr, self.list_element_type.as_pointer())
+    
+    # Copy existing elements if any
+    zero = ir.Constant(self.int_type, 0)
+    has_elements = self.builder.icmp_signed('>', current_length, zero)
+    
+    current_func = self.current_function if self.current_function else self.main_func
+    copy_block = current_func.append_basic_block('copy_elements')
+    append_block = current_func.append_basic_block('append_element')
+    
+    self.builder.cbranch(has_elements, copy_block, append_block)
+    
+    # Copy existing elements
+    self.builder.position_at_end(copy_block)
+    # Simple loop to copy elements
+    counter_ptr = self.builder.alloca(self.int_type, name="copy_counter")
+    self.builder.store(zero, counter_ptr)
+    
+    copy_loop = current_func.append_basic_block('copy_loop')
+    copy_body = current_func.append_basic_block('copy_body')
+    self.builder.branch(copy_loop)
+    
+    # Copy loop condition
+    self.builder.position_at_end(copy_loop)
+    counter = self.builder.load(counter_ptr)
+    copy_condition = self.builder.icmp_signed('<', counter, current_length)
+    self.builder.cbranch(copy_condition, copy_body, append_block)
+    
+    # Copy loop body
+    self.builder.position_at_end(copy_body)
+    counter = self.builder.load(counter_ptr)
+    
+    # Load from old array
+    old_element_ptr = self.builder.gep(current_elements, [counter])
+    old_element = self.builder.load(old_element_ptr)
+    
+    # Store to new array
+    new_element_ptr = self.builder.gep(new_elements_ptr, [counter])
+    self.builder.store(old_element, new_element_ptr)
+    
+    # Increment counter
+    next_counter = self.builder.add(counter, ir.Constant(self.int_type, 1))
+    self.builder.store(next_counter, counter_ptr)
+    self.builder.branch(copy_loop)
+    
+    # Append new element
+    self.builder.position_at_end(append_block)
+    
+    # Convert element to i64 if needed
+    converted_element = element
+    if element.type == self.float_type:
+      converted_element = self.builder.bitcast(element, self.int_type)
+    elif element.type == self.bool_type:
+      converted_element = self.builder.zext(element, self.int_type)
+    
+    # Store new element at the end
+    last_index = self.builder.sub(new_length, ir.Constant(self.int_type, 1))
+    last_element_ptr = self.builder.gep(new_elements_ptr, [last_index])
+    self.builder.store(converted_element, last_element_ptr)
+    
+    # Create new list struct
+    new_list = ir.Constant(self.list_type, ir.Undefined)
+    new_list = self.builder.insert_value(new_list, new_length, 0)
+    new_list = self.builder.insert_value(new_list, new_elements_ptr, 1)
+    
+    return new_list
+
+  def list_concatenate(self, left_list, right_list):
+    """Concatenate two lists (returns new list)"""
+    # Extract list info
+    left_length = self.builder.extract_value(left_list, 0)
+    left_elements = self.builder.extract_value(left_list, 1)
+    right_length = self.builder.extract_value(right_list, 0)
+    right_elements = self.builder.extract_value(right_list, 1)
+    
+    # Calculate total length
+    total_length = self.builder.add(left_length, right_length)
+    
+    # Allocate memory for new list
+    element_size = ir.Constant(self.int_type, 8)
+    new_array_size = self.builder.mul(total_length, element_size)
+    new_elements_ptr = self.builder.call(self.malloc_func, [new_array_size])
+    new_elements_ptr = self.builder.bitcast(new_elements_ptr, self.list_element_type.as_pointer())
+    
+    # Copy left list elements
+    zero = ir.Constant(self.int_type, 0)
+    current_func = self.current_function if self.current_function else self.main_func
+    
+    # Copy left elements
+    left_counter_ptr = self.builder.alloca(self.int_type, name="left_copy_counter")
+    self.builder.store(zero, left_counter_ptr)
+    
+    left_copy_loop = current_func.append_basic_block('left_copy_loop')
+    left_copy_body = current_func.append_basic_block('left_copy_body')
+    right_copy_start = current_func.append_basic_block('right_copy_start')
+    
+    self.builder.branch(left_copy_loop)
+    
+    # Left copy loop
+    self.builder.position_at_end(left_copy_loop)
+    left_counter = self.builder.load(left_counter_ptr)
+    left_condition = self.builder.icmp_signed('<', left_counter, left_length)
+    self.builder.cbranch(left_condition, left_copy_body, right_copy_start)
+    
+    self.builder.position_at_end(left_copy_body)
+    left_counter = self.builder.load(left_counter_ptr)
+    
+    left_element_ptr = self.builder.gep(left_elements, [left_counter])
+    left_element = self.builder.load(left_element_ptr)
+    
+    new_element_ptr = self.builder.gep(new_elements_ptr, [left_counter])
+    self.builder.store(left_element, new_element_ptr)
+    
+    next_left_counter = self.builder.add(left_counter, ir.Constant(self.int_type, 1))
+    self.builder.store(next_left_counter, left_counter_ptr)
+    self.builder.branch(left_copy_loop)
+    
+    # Copy right elements
+    self.builder.position_at_end(right_copy_start)
+    right_counter_ptr = self.builder.alloca(self.int_type, name="right_copy_counter")
+    self.builder.store(zero, right_counter_ptr)
+    
+    right_copy_loop = current_func.append_basic_block('right_copy_loop')
+    right_copy_body = current_func.append_basic_block('right_copy_body')
+    concat_end = current_func.append_basic_block('concat_end')
+    
+    self.builder.branch(right_copy_loop)
+    
+    self.builder.position_at_end(right_copy_loop)
+    right_counter = self.builder.load(right_counter_ptr)
+    right_condition = self.builder.icmp_signed('<', right_counter, right_length)
+    self.builder.cbranch(right_condition, right_copy_body, concat_end)
+    
+    self.builder.position_at_end(right_copy_body)
+    right_counter = self.builder.load(right_counter_ptr)
+    
+    right_element_ptr = self.builder.gep(right_elements, [right_counter])
+    right_element = self.builder.load(right_element_ptr)
+    
+    # Calculate position in new array (left_length + right_counter)
+    new_index = self.builder.add(left_length, right_counter)
+    new_element_ptr = self.builder.gep(new_elements_ptr, [new_index])
+    self.builder.store(right_element, new_element_ptr)
+    
+    next_right_counter = self.builder.add(right_counter, ir.Constant(self.int_type, 1))
+    self.builder.store(next_right_counter, right_counter_ptr)
+    self.builder.branch(right_copy_loop)
+    
+    # Create new list struct
+    self.builder.position_at_end(concat_end)
+    new_list = ir.Constant(self.list_type, ir.Undefined)
+    new_list = self.builder.insert_value(new_list, total_length, 0)
+    new_list = self.builder.insert_value(new_list, new_elements_ptr, 1)
+    
+    return new_list
+
+  def list_remove_at_index(self, list_val, index):
+    """Remove element at index from list (returns new list)"""
+    # Extract list info
+    current_length = self.builder.extract_value(list_val, 0)
+    current_elements = self.builder.extract_value(list_val, 1)
+    
+    # Check bounds
+    zero = ir.Constant(self.int_type, 0)
+    index_valid = self.builder.and_(
+      self.builder.icmp_signed('>=', index, zero),
+      self.builder.icmp_signed('<', index, current_length)
+    )
+    
+    current_func = self.current_function if self.current_function else self.main_func
+    valid_block = current_func.append_basic_block('index_valid')
+    error_block = current_func.append_basic_block('index_error')
+    
+    self.builder.cbranch(index_valid, valid_block, error_block)
+    
+    # Handle error case - for now just return original list
+    self.builder.position_at_end(error_block)
+    # In a real implementation, we'd throw an exception here
+    # For now, just return the original list
+    self.builder.branch(valid_block)
+    
+    # Valid index case
+    self.builder.position_at_end(valid_block)
+    
+    # Calculate new length
+    new_length = self.builder.sub(current_length, ir.Constant(self.int_type, 1))
+    
+    # Allocate memory for new list (if new_length > 0)
+    has_elements = self.builder.icmp_signed('>', new_length, zero)
+    
+    alloc_block = current_func.append_basic_block('allocate_new')
+    empty_block = current_func.append_basic_block('return_empty')
+    copy_start = current_func.append_basic_block('copy_start')
+    
+    self.builder.cbranch(has_elements, alloc_block, empty_block)
+    
+    # Allocate new array
+    self.builder.position_at_end(alloc_block)
+    element_size = ir.Constant(self.int_type, 8)
+    new_array_size = self.builder.mul(new_length, element_size)
+    new_elements_ptr = self.builder.call(self.malloc_func, [new_array_size])
+    new_elements_ptr = self.builder.bitcast(new_elements_ptr, self.list_element_type.as_pointer())
+    self.builder.branch(copy_start)
+    
+    # Return empty list
+    self.builder.position_at_end(empty_block)
+    empty_ptr = ir.Constant(self.list_element_type.as_pointer(), None)
+    self.builder.branch(copy_start)
+    
+    # Copy elements (skipping the one at index)
+    self.builder.position_at_end(copy_start)
+    elements_ptr = self.builder.phi(self.list_element_type.as_pointer())
+    elements_ptr.add_incoming(new_elements_ptr, alloc_block)
+    elements_ptr.add_incoming(empty_ptr, empty_block)
+    
+    # Copy before index and after index separately
+    src_counter_ptr = self.builder.alloca(self.int_type, name="src_counter")
+    dst_counter_ptr = self.builder.alloca(self.int_type, name="dst_counter")
+    self.builder.store(zero, src_counter_ptr)
+    self.builder.store(zero, dst_counter_ptr)
+    
+    copy_loop = current_func.append_basic_block('copy_loop')
+    copy_body = current_func.append_basic_block('copy_body')
+    skip_element = current_func.append_basic_block('skip_element')
+    copy_element = current_func.append_basic_block('copy_element')
+    remove_end = current_func.append_basic_block('remove_end')
+    
+    self.builder.branch(copy_loop)
+    
+    # Copy loop condition
+    self.builder.position_at_end(copy_loop)
+    src_counter = self.builder.load(src_counter_ptr)
+    copy_condition = self.builder.icmp_signed('<', src_counter, current_length)
+    self.builder.cbranch(copy_condition, copy_body, remove_end)
+    
+    # Copy body - check if this is the index to skip
+    self.builder.position_at_end(copy_body)
+    src_counter = self.builder.load(src_counter_ptr)
+    is_skip_index = self.builder.icmp_signed('==', src_counter, index)
+    self.builder.cbranch(is_skip_index, skip_element, copy_element)
+    
+    # Skip this element
+    self.builder.position_at_end(skip_element)
+    src_counter = self.builder.load(src_counter_ptr)
+    next_src = self.builder.add(src_counter, ir.Constant(self.int_type, 1))
+    self.builder.store(next_src, src_counter_ptr)
+    self.builder.branch(copy_loop)
+    
+    # Copy this element
+    self.builder.position_at_end(copy_element)
+    src_counter = self.builder.load(src_counter_ptr)
+    dst_counter = self.builder.load(dst_counter_ptr)
+    
+    src_element_ptr = self.builder.gep(current_elements, [src_counter])
+    src_element = self.builder.load(src_element_ptr)
+    
+    dst_element_ptr = self.builder.gep(elements_ptr, [dst_counter])
+    self.builder.store(src_element, dst_element_ptr)
+    
+    next_src = self.builder.add(src_counter, ir.Constant(self.int_type, 1))
+    next_dst = self.builder.add(dst_counter, ir.Constant(self.int_type, 1))
+    self.builder.store(next_src, src_counter_ptr)
+    self.builder.store(next_dst, dst_counter_ptr)
+    self.builder.branch(copy_loop)
+    
+    # Create new list struct
+    self.builder.position_at_end(remove_end)
+    new_list = ir.Constant(self.list_type, ir.Undefined)
+    new_list = self.builder.insert_value(new_list, new_length, 0)
+    new_list = self.builder.insert_value(new_list, elements_ptr, 1)
+    
+    return new_list
+
+  def list_access_at_index(self, list_val, index):
+    """Access element at index from list (returns element value)"""
+    # Extract list info
+    list_length = self.builder.extract_value(list_val, 0)
+    list_elements = self.builder.extract_value(list_val, 1)
+    
+    # Check bounds
+    zero = ir.Constant(self.int_type, 0)
+    index_valid = self.builder.and_(
+      self.builder.icmp_signed('>=', index, zero),
+      self.builder.icmp_signed('<', index, list_length)
+    )
+    
+    current_func = self.current_function if self.current_function else self.main_func
+    valid_block = current_func.append_basic_block('access_valid')
+    error_block = current_func.append_basic_block('access_error')
+    end_block = current_func.append_basic_block('access_end')
+    
+    self.builder.cbranch(index_valid, valid_block, error_block)
+    
+    # Valid access
+    self.builder.position_at_end(valid_block)
+    element_ptr = self.builder.gep(list_elements, [index])
+    element_value = self.builder.load(element_ptr)
+    self.builder.branch(end_block)
+    
+    # Error case - return 0
+    self.builder.position_at_end(error_block)
+    error_value = ir.Constant(self.int_type, 0)
+    self.builder.branch(end_block)
+    
+    # Return result
+    self.builder.position_at_end(end_block)
+    result = self.builder.phi(self.int_type)
+    result.add_incoming(element_value, valid_block)
+    result.add_incoming(error_value, error_block)
+    
+    return result
 
   def _to_boolean(self, value):
     if value.type == self.bool_type:
@@ -542,6 +1043,8 @@ class CodeGenerator:
         return_type = self.float_type
       elif node.return_type.type == KeywordType.STRING_TYPE:
         return_type = self.char_ptr_type
+      elif node.return_type.type == KeywordType.LIST_TYPE:
+        return_type = self.list_type
     
     # Create function type - for simplicity, all parameters are int64
     param_types = [self.int_type] * len(node.args)
@@ -594,6 +1097,12 @@ class CodeGenerator:
           return_value = ir.Constant(self.float_type, 0.0)
         elif func.return_value.type == self.char_ptr_type:
           return_value = ir.Constant(self.char_ptr_type, None)
+        elif func.return_value.type == self.list_type:
+          # Return empty list
+          empty_list = ir.Constant(self.list_type, ir.Undefined)
+          empty_list = self.builder.insert_value(empty_list, ir.Constant(self.int_type, 0), 0)  # length = 0
+          empty_list = self.builder.insert_value(empty_list, ir.Constant(self.list_element_type.as_pointer(), None), 1)  # elements = null
+          return_value = empty_list
         else:
           return_value = ir.Constant(self.int_type, 0)
       self.builder.ret(return_value)
@@ -626,6 +1135,8 @@ class CodeGenerator:
             return "float"
           elif llvm_type == self.char_ptr_type:
             return "string"
+          elif llvm_type == self.list_type:
+            return "list"
           else:
             return str(llvm_type)
         
@@ -666,6 +1177,12 @@ class CodeGenerator:
         return_val = ir.Constant(self.float_type, 0.0)
       elif expected_type == self.char_ptr_type:
         return_val = ir.Constant(self.char_ptr_type, None)
+      elif expected_type == self.list_type:
+        # Return empty list
+        empty_list = ir.Constant(self.list_type, ir.Undefined)
+        empty_list = self.builder.insert_value(empty_list, ir.Constant(self.int_type, 0), 0)  # length = 0
+        empty_list = self.builder.insert_value(empty_list, ir.Constant(self.list_element_type.as_pointer(), None), 1)  # elements = null
+        return_val = empty_list
       else:
         return_val = ir.Constant(self.int_type, 0)
     
