@@ -29,4 +29,3 @@ assert var_test_6_elements_format == [1, 2, 3]
 var_test7 = "var float x = 3.14; x"
 var_test7_result = test(var_test7)
 assert var_test7_result.elements[-1].value == 3.14
-

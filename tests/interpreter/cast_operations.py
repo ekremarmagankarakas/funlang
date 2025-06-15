@@ -26,5 +26,6 @@ assert var_test6_result.elements[-1].value == "5.0"
 
 var_test7 = 'var str = "hello"; to_list(str)'
 var_test7_result = test(var_test7)
-var_test7_result_tolist = [element.value for element in var_test7_result.elements[-1].elements]
+var_test7_result_tolist = [
+    element.value for element in var_test7_result.elements[-1].elements]
 assert var_test7_result_tolist == ['h', 'e', 'l', 'l', 'o']

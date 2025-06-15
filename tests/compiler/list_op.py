@@ -120,8 +120,7 @@ fun int shouldFail() {
 """
 
 try:
-  compile_test(list_type_error_test)
+    compile_test(list_type_error_test)
 except Exception as e:
-  assert str(
-      e) == "Type mismatch: function declared to return 'int' but trying to return 'list'"
-
+    assert str(
+        e) == "Type mismatch: function declared to return 'int' but trying to return 'list'"

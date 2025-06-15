@@ -70,6 +70,7 @@ print(result);
 """
 
 try:
-  compile_test(function_mismatched_return)
+    compile_test(function_mismatched_return)
 except Exception as e:
-  assert str(e) == "Type mismatch: function declared to return 'string' but trying to return 'int'"
+    assert str(
+        e) == "Type mismatch: function declared to return 'string' but trying to return 'int'"

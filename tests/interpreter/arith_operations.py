@@ -72,4 +72,3 @@ negative_test3 = "-2 * 3"
 assert test(negative_test).elements[0].value == -5
 assert test(negative_test2).elements[0].value == -5
 assert test(negative_test3).elements[0].value == -6
-

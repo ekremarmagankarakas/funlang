@@ -25,7 +25,8 @@ expected_builtin_output = (
 )
 
 llvm_ir_builtin = compile_test(builtin_tests)
-compiled_builtin_output, compile_builtin_error = run_compiled_code(llvm_ir_builtin)
+compiled_builtin_output, compile_builtin_error = run_compiled_code(
+    llvm_ir_builtin)
 assert compiled_builtin_output == expected_builtin_output.strip()
 os.remove("temp.ll")
 os.remove("temp.o")
