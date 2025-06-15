@@ -1,7 +1,7 @@
 from llvmlite import ir, binding
 import llvmlite.binding as llvm
 from src.token import TokenType, KeywordType
-from src.ast_nodes import NumberNode, BinaryOperationNode, ListNode, FunctionCallNode, StringNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode, IfNode, UnaryOperationNode, ForNode, WhileNode
+from src.ast_nodes import NumberNode, BinaryOperationNode, ListNode, FunctionCallNode, StringNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode, IfNode, UnaryOperationNode, ForNode, WhileNode, BreakNode, ContinueNode
 
 
 class CodeGenerator:
@@ -22,6 +22,9 @@ class CodeGenerator:
     self.global_vars = {}
     self.local_vars = {}
     self.functions = {}
+    
+    # Loop context stack for break/continue
+    self.loop_stack = []
 
     # Setup types
     self.int_type = ir.IntType(64)
@@ -54,7 +57,7 @@ class CodeGenerator:
       last_result = None
       for stmt in ast_node.element_nodes:
         # Process supported node types
-        if isinstance(stmt, (NumberNode, BinaryOperationNode, FunctionCallNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode, IfNode, UnaryOperationNode, ForNode, WhileNode)):
+        if isinstance(stmt, (NumberNode, BinaryOperationNode, FunctionCallNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode, IfNode, UnaryOperationNode, ForNode, WhileNode, BreakNode, ContinueNode)):
           last_result = self.visit(stmt)
     else:
       last_result = self.visit(ast_node)
@@ -377,6 +380,12 @@ class CodeGenerator:
     loop_incr_block = self.main_func.append_basic_block('for_incr') 
     loop_end_block = self.main_func.append_basic_block('for_end')
     
+    # Push loop context for break/continue
+    self.loop_stack.append({
+      'continue_block': loop_incr_block,
+      'break_block': loop_end_block
+    })
+    
     # Jump to condition check
     self.builder.branch(loop_cond_block)
     
@@ -405,6 +414,9 @@ class CodeGenerator:
     # Loop end block
     self.builder.position_at_end(loop_end_block)
     
+    # Pop loop context
+    self.loop_stack.pop()
+    
     # Restore old variable or remove from scope
     if old_var:
       self.local_vars[node.var_name.value] = old_var
@@ -418,6 +430,12 @@ class CodeGenerator:
     loop_cond_block = self.main_func.append_basic_block('while_cond')
     loop_body_block = self.main_func.append_basic_block('while_body')
     loop_end_block = self.main_func.append_basic_block('while_end')
+    
+    # Push loop context for break/continue
+    self.loop_stack.append({
+      'continue_block': loop_cond_block,
+      'break_block': loop_end_block
+    })
     
     # Jump to condition check
     self.builder.branch(loop_cond_block)
@@ -443,5 +461,36 @@ class CodeGenerator:
     
     # Loop end block
     self.builder.position_at_end(loop_end_block)
+    
+    # Pop loop context
+    self.loop_stack.pop()
+    
+    return ir.Constant(self.int_type, 0)
+
+  def visit_BreakNode(self, node):
+    # Check if we're inside a loop
+    if not self.loop_stack:
+      raise Exception("Break statement not inside a loop")
+    
+    # Get the current loop's break block
+    current_loop = self.loop_stack[-1]
+    break_block = current_loop['break_block']
+    
+    # Jump to the break block
+    self.builder.branch(break_block)
+    
+    return ir.Constant(self.int_type, 0)
+
+  def visit_ContinueNode(self, node):
+    # Check if we're inside a loop
+    if not self.loop_stack:
+      raise Exception("Continue statement not inside a loop")
+    
+    # Get the current loop's continue block  
+    current_loop = self.loop_stack[-1]
+    continue_block = current_loop['continue_block']
+    
+    # Jump to the continue block
+    self.builder.branch(continue_block)
     
     return ir.Constant(self.int_type, 0)
