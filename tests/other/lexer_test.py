@@ -1,6 +1,6 @@
-from lexer import Lexer
+from src.lexer import Lexer
 
-source = "not 0"
+source = "fun int add(a, b) { return a + b; }; var result = add(2, 3); result;"
 file_name = "tests/lexer_test.py"
 lexer = Lexer(file_name, source)
 tokens, error = lexer.tokenizer()

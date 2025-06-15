@@ -7,10 +7,11 @@ class Program:
 
 
 class FunctionDeclarationNode:
-  def __init__(self, name, params, body):
+  def __init__(self, name, params, body, return_type=None):
     self.name = name
     self.args = params
     self.body = body
+    self.return_type = return_type
 
     if self.name:
       self.pos_start = self.name.pos_start
@@ -22,7 +23,7 @@ class FunctionDeclarationNode:
     self.pos_end = self.body[-1].pos_start
 
   def __repr__(self):
-    return f"FunctionDeclaration(name={self.name}, params={self.args}, body={self.body})"
+    return f"FunctionDeclaration(name={self.name}, params={self.args}, body={self.body}, return_type={self.return_type})"
 
 
 class FunctionCallNode:

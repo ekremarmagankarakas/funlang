@@ -480,10 +480,16 @@ class Parser:
 
   def parse_function(self):
     func_name = None
+    return_type = None
     res = ParseResult()
     if not self.match(TK.FUN):
       return res.failure(self.err("Expected 'fun' keyword"))
     self.advance()
+
+    # Check for optional return type
+    if self.current_token.type in (TK.INT_TYPE, TK.FLOAT_TYPE, TK.STRING_TYPE, TK.LIST_TYPE):
+      return_type = self.current_token
+      self.advance()
 
     if self.match(TT.IDENT):
       func_name = self.current_token
@@ -525,4 +531,4 @@ class Parser:
       return res.failure(self.err("Expected '}'"))
     self.advance()
 
-    return res.success(FunctionDeclarationNode(func_name, params, body))
+    return res.success(FunctionDeclarationNode(func_name, params, body, return_type))

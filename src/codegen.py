@@ -1,7 +1,7 @@
 from llvmlite import ir, binding
 import llvmlite.binding as llvm
 from src.token import TokenType, KeywordType
-from src.ast_nodes import NumberNode, BinaryOperationNode, ListNode, FunctionCallNode, StringNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode, IfNode, UnaryOperationNode, ForNode, WhileNode, BreakNode, ContinueNode
+from src.ast_nodes import NumberNode, BinaryOperationNode, ListNode, FunctionCallNode, StringNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode, IfNode, UnaryOperationNode, ForNode, WhileNode, BreakNode, ContinueNode, FunctionDeclarationNode, ReturnNode
 
 
 class CodeGenerator:
@@ -25,6 +25,10 @@ class CodeGenerator:
     
     # Loop context stack for break/continue
     self.loop_stack = []
+    
+    # Function context for tracking current function
+    self.current_function = None
+    self.function_stack = []
 
     # Setup types
     self.int_type = ir.IntType(64)
@@ -57,7 +61,7 @@ class CodeGenerator:
       last_result = None
       for stmt in ast_node.element_nodes:
         # Process supported node types
-        if isinstance(stmt, (NumberNode, BinaryOperationNode, FunctionCallNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode, IfNode, UnaryOperationNode, ForNode, WhileNode, BreakNode, ContinueNode)):
+        if isinstance(stmt, (NumberNode, BinaryOperationNode, FunctionCallNode, VariableDeclarationNode, VariableAccessNode, VariableAssignmentNode, IfNode, UnaryOperationNode, ForNode, WhileNode, BreakNode, ContinueNode, FunctionDeclarationNode, ReturnNode)):
           last_result = self.visit(stmt)
     else:
       last_result = self.visit(ast_node)
@@ -96,11 +100,37 @@ class CodeGenerator:
     return self.builder.gep(string_global, [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)])
 
   def visit_FunctionCallNode(self, node):
-    if node.name.tok.value == "print":
+    # Extract function name
+    func_name = node.name.tok.value if hasattr(node.name, 'tok') else node.name.value
+    
+    # Handle built-in functions
+    if func_name == "print":
       return self.handle_print_call(node)
+    
+    # Handle user-defined functions
+    if func_name in self.functions:
+      func = self.functions[func_name]
+      
+      # Generate arguments
+      args = []
+      for arg_node in node.args:
+        arg_val = self.visit(arg_node)
+        # Convert all arguments to int64 for simplicity
+        if arg_val.type == self.float_type:
+          arg_val = self.builder.fptosi(arg_val, self.int_type)
+        elif arg_val.type == self.bool_type:
+          arg_val = self.builder.zext(arg_val, self.int_type)
+        args.append(arg_val)
+      
+      # Check argument count
+      if len(args) != len(func.args):
+        raise Exception(f"Function '{func_name}' expects {len(func.args)} arguments, got {len(args)}")
+      
+      # Call function
+      return self.builder.call(func, args)
+    
     else:
-      raise Exception(
-          f"Function '{node.name.tok.value}' not supported in codegen yet")
+      raise Exception(f"Function '{func_name}' not defined")
 
   def handle_print_call(self, node):
     if len(node.args) != 1:
@@ -308,13 +338,15 @@ class CodeGenerator:
   def visit_IfNode(self, node):
     # Handle multiple elif cases
     current_block = self.builder.block
-    merge_block = self.main_func.append_basic_block('if_merge')
+    # Use current function context instead of always using main_func
+    current_func = self.current_function if self.current_function else self.main_func
+    merge_block = current_func.append_basic_block('if_merge')
     
     # Process all if/elif cases
     for i, (condition_node, body_statements) in enumerate(node.cases):
       # Create blocks for this condition
-      then_block = self.main_func.append_basic_block(f'if_then_{i}')
-      next_block = self.main_func.append_basic_block(f'if_next_{i}') if i < len(node.cases) - 1 or node.else_case else merge_block
+      then_block = current_func.append_basic_block(f'if_then_{i}')
+      next_block = current_func.append_basic_block(f'if_next_{i}') if i < len(node.cases) - 1 or node.else_case else merge_block
       
       # Generate condition
       condition = self.visit(condition_node)
@@ -375,10 +407,11 @@ class CodeGenerator:
     self.local_vars[node.var_name.value] = loop_var_ptr
     
     # Create basic blocks
-    loop_cond_block = self.main_func.append_basic_block('for_cond')
-    loop_body_block = self.main_func.append_basic_block('for_body')
-    loop_incr_block = self.main_func.append_basic_block('for_incr') 
-    loop_end_block = self.main_func.append_basic_block('for_end')
+    current_func = self.current_function if self.current_function else self.main_func
+    loop_cond_block = current_func.append_basic_block('for_cond')
+    loop_body_block = current_func.append_basic_block('for_body')
+    loop_incr_block = current_func.append_basic_block('for_incr') 
+    loop_end_block = current_func.append_basic_block('for_end')
     
     # Push loop context for break/continue
     self.loop_stack.append({
@@ -427,9 +460,10 @@ class CodeGenerator:
 
   def visit_WhileNode(self, node):
     # Create basic blocks
-    loop_cond_block = self.main_func.append_basic_block('while_cond')
-    loop_body_block = self.main_func.append_basic_block('while_body')
-    loop_end_block = self.main_func.append_basic_block('while_end')
+    current_func = self.current_function if self.current_function else self.main_func
+    loop_cond_block = current_func.append_basic_block('while_cond')
+    loop_body_block = current_func.append_basic_block('while_body')
+    loop_end_block = current_func.append_basic_block('while_end')
     
     # Push loop context for break/continue
     self.loop_stack.append({
@@ -494,3 +528,115 @@ class CodeGenerator:
     self.builder.branch(continue_block)
     
     return ir.Constant(self.int_type, 0)
+
+  def visit_FunctionDeclarationNode(self, node):
+    # Extract function name
+    func_name = node.name.value if hasattr(node.name, 'value') else str(node.name)
+    
+    # Determine return type based on declaration
+    return_type = self.int_type  # default
+    if node.return_type:
+      if node.return_type.type == KeywordType.INT_TYPE:
+        return_type = self.int_type
+      elif node.return_type.type == KeywordType.FLOAT_TYPE:
+        return_type = self.float_type
+      elif node.return_type.type == KeywordType.STRING_TYPE:
+        return_type = self.char_ptr_type
+    
+    # Create function type - for simplicity, all parameters are int64
+    param_types = [self.int_type] * len(node.args)
+    func_type = ir.FunctionType(return_type, param_types)
+    
+    # Create function
+    func = ir.Function(self.module, func_type, func_name)
+    self.functions[func_name] = func
+    
+    # Save current context
+    old_builder = self.builder
+    old_function = self.current_function
+    old_local_vars = self.local_vars.copy()
+    
+    # Set new context
+    self.current_function = func
+    self.local_vars = {}
+    
+    # Create entry block
+    entry_block = func.append_basic_block('entry')
+    self.builder = ir.IRBuilder(entry_block)
+    
+    # Add parameters to local variables
+    for i, param in enumerate(node.args):
+      param_name = param.value if hasattr(param, 'value') else str(param)
+      # Allocate space for parameter
+      param_ptr = self.builder.alloca(self.int_type, name=param_name)
+      # Store the parameter value
+      self.builder.store(func.args[i], param_ptr)
+      # Add to local variables
+      self.local_vars[param_name] = param_ptr
+    
+    # Generate function body
+    return_value = None
+    for stmt in node.body:
+      result = self.visit(stmt)
+      if isinstance(stmt, ReturnNode):
+        return_value = result
+        break
+    
+    # If no explicit return, return 0
+    if not self.builder.block.is_terminated:
+      if return_value is None:
+        # Return appropriate default based on function return type
+        if func.return_value.type == self.int_type:
+          return_value = ir.Constant(self.int_type, 0)
+        elif func.return_value.type == self.float_type:
+          return_value = ir.Constant(self.float_type, 0.0)
+        elif func.return_value.type == self.char_ptr_type:
+          return_value = ir.Constant(self.char_ptr_type, None)
+        else:
+          return_value = ir.Constant(self.int_type, 0)
+      self.builder.ret(return_value)
+    
+    # Restore previous context
+    self.builder = old_builder
+    self.current_function = old_function
+    self.local_vars = old_local_vars
+    
+    return func
+
+  def visit_ReturnNode(self, node):
+    # Generate return value
+    if node.node_to_return:
+      return_val = self.visit(node.node_to_return)
+      
+      # Get expected return type from current function
+      expected_type = self.current_function.return_value.type
+      
+      # Convert return value to expected type if needed
+      if return_val.type != expected_type:
+        if expected_type == self.int_type:
+          if return_val.type == self.float_type:
+            return_val = self.builder.fptosi(return_val, self.int_type)
+          elif return_val.type == self.bool_type:
+            return_val = self.builder.zext(return_val, self.int_type)
+        elif expected_type == self.float_type:
+          if return_val.type == self.int_type:
+            return_val = self.builder.sitofp(return_val, self.float_type)
+          elif return_val.type == self.bool_type:
+            bool_as_int = self.builder.zext(return_val, self.int_type)
+            return_val = self.builder.sitofp(bool_as_int, self.float_type)
+    else:
+      # Return appropriate default based on function return type
+      expected_type = self.current_function.return_value.type
+      if expected_type == self.int_type:
+        return_val = ir.Constant(self.int_type, 0)
+      elif expected_type == self.float_type:
+        return_val = ir.Constant(self.float_type, 0.0)
+      elif expected_type == self.char_ptr_type:
+        return_val = ir.Constant(self.char_ptr_type, None)
+      else:
+        return_val = ir.Constant(self.int_type, 0)
+    
+    # Generate return instruction
+    self.builder.ret(return_val)
+    
+    return return_val
