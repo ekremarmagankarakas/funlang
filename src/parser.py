@@ -74,7 +74,7 @@ class Parser:
                 statements.append(statement)
 
         pos_end = statements[-1].pos_end.copy() if statements else pos_start.copy()
-        return res.success(ListNode(statements, pos_start, pos_end))
+        return res.success(ListNode(None, statements, pos_start, pos_end))
 
     def parse_statement(self):
         res = ParseResult()
@@ -274,7 +274,7 @@ class Parser:
                 res.failure(self.err("Expected ')'"))
             self.advance()
             return res.success(expr)
-        elif self.match(TT.LBRACKET):
+        elif self.current_token.type in (TT.LBRACKET, TK.INT_TYPE, TK.FLOAT_TYPE, TK.STRING_TYPE, TK.LIST_TYPE):
             list_expr = res.register(self.parse_list_expression())
             if res.error:
                 return res
@@ -304,7 +304,12 @@ class Parser:
     def parse_list_expression(self):
         res = ParseResult()
         element_nodes = []
+        type_tok = None
         pos_start = self.current_token.pos_start.copy()
+
+        if self.current_token.type in (TK.INT_TYPE, TK.FLOAT_TYPE, TK.STRING_TYPE, TK.LIST_TYPE):
+            type_tok = self.current_token
+            self.advance()
 
         if not self.match(TT.LBRACKET):
             res.failure(self.err("Expected '['"))
@@ -329,7 +334,7 @@ class Parser:
             pos_end = self.current_token.pos_end.copy()
             self.advance()
 
-        return res.success(ListNode(element_nodes, pos_start, pos_end))
+        return res.success(ListNode(type_tok, element_nodes, pos_start, pos_end))
 
     def parse_if_expression(self):
         res = ParseResult()

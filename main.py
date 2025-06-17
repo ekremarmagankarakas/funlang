@@ -40,6 +40,48 @@ def main():
                 else:
                     print("Result:", result)
 
+    # Run interactive shell development mode
+    elif len(sys.argv) == 2 and sys.argv[1] == '--dev':
+        print("FunLang Development Shell - Type 'exit' to quit")
+        print("Commands: 'compile <code>' to compile, 'run <code>' to interpret")
+        while True:
+            source = input('funlang-dev > ')
+            if source.lower() == 'exit':
+                break
+
+            if source.startswith('compile '):
+                code = source[8:]
+                llvm_ir, ast, tokens, error = compile_to_llvm('<stdin>', code)
+
+                if error:
+                    if isinstance(error, str):
+                        print(f"Compilation Error: {error}")
+                    else:
+                        print(error.as_string())
+
+                print("Lexer Tokens:", tokens)
+                print("AST:", ast)
+                print("LLVM IR:", llvm_ir)
+            elif source.startswith('run '):
+                code = source[4:]
+                result, ast, tokens, error = run('<stdin>', code)
+
+                if error:
+                    print(error.as_string())
+
+                print("Lexer Tokens:", tokens)
+                print("AST:", ast)
+                print("Result:", result)
+            else:
+                result, ast, tokens, error = run('<stdin>', source)
+
+                if error:
+                    print(error.as_string())
+
+                print("Lexer Tokens:", tokens)
+                print("AST:", ast)
+                print("Result:", result)
+
     # Run or compile a file
     elif len(sys.argv) == 2:
         file_path = sys.argv[1]

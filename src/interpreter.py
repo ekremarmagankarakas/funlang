@@ -663,11 +663,20 @@ class Interpreter:
     def visit_ListNode(self, node, context):
         res = InterpreterResult()
         elements = []
+        expected_type = node.type_tok.value if node.type_tok else None
 
         for element_node in node.element_nodes:
             elements.append(res.register(self.visit(element_node, context)))
             if res.should_return():
                 return res
+
+            if expected_type:
+                if not self.type_matches(elements[-1], expected_type):
+                    return res.failure(RuntimeError(
+                        element_node.pos_start, element_node.pos_end,
+                        f"Type mismatch: expected {expected_type}, got {self.get_type_name(elements[-1])}",
+                        context
+                    ))
 
         return res.success(List(elements).set_context(context).set_pos(node.pos_start, node.pos_end))
 

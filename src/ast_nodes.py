@@ -168,14 +168,15 @@ class WhileNode:
 
 
 class ListNode:
-    def __init__(self, element_nodes, pos_start, pos_end):
+    def __init__(self, type_tok, element_nodes, pos_start, pos_end):
+        self.type_tok = type_tok
         self.element_nodes = element_nodes
 
         self.pos_start = pos_start
         self.pos_end = pos_end
 
     def __repr__(self):
-        return f"ListNode(elements={self.element_nodes})"
+        return f"ListNode(tok_type={self.type_tok}, elements={self.element_nodes})"
 
 
 class ReturnNode:
