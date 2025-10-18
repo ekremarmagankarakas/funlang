@@ -1,0 +1,36 @@
+{
+  "keywords": {
+    "if": "eger",
+    "elif": "yoksa_eger",
+    "else": "yoksa",
+    "for": "dongu",
+    "while": "surec",
+    "fun": "fonksiyon",
+    "var": "degisken",
+    "return": "dondur",
+    "break": "kir",
+    "continue": "devam",
+    "and": "ve",
+    "or": "veya",
+    "not": "degil",
+    "int": "tamsayi",
+    "float": "ondalik",
+    "string": "metin",
+    "list": "liste"
+  },
+  "builtins": {
+    "print": "yazdir",
+    "clear": "temizle",
+    "is_string": "metin_mi",
+    "is_number": "sayi_mi",
+    "is_list": "liste_mi",
+    "is_fun": "fonksiyon_mu",
+    "len": "uzunluk",
+    "to_string": "metine_cevir",
+    "to_int": "tamsayiya_cevir",
+    "to_float": "ondaliga_cevir",
+    "to_list": "listeye_cevir",
+    "typeof": "turu",
+    "elos": "elos"
+  }
+}

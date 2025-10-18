@@ -1,5 +1,7 @@
+# src/lexer.py
 from src.error import IllegalCharError
 from src.token import Token, TokenType as TT, KeywordType as TK, BuiltInFunctionType as BT
+from src.config import LanguageConfig
 
 
 class Position:
@@ -23,23 +25,34 @@ class Position:
 
 
 class Lexer:
-    def __init__(self, file_name, source):
+    def __init__(self, file_name, source, config=None):
         self.source = source
         self.pos = Position(-1, 0, -1, file_name, source)
         self.current_char = None
+        
+        # Load configuration
+        self.config = config if config else LanguageConfig()
+        
         self.advance()
 
     def advance(self):
-        self.pos.advance(self.source[self.pos.index])
+        self.pos.advance(self.source[self.pos.index] if self.pos.index < len(self.source) else None)
         self.current_char = self.source[self.pos.index] if self.pos.index < len(
             self.source) else None
 
-    def get_keyword_token(self, keyword):
-        keywordtoken = next(
-            (token for token in TK if token.value == keyword), None)
-        builtintoken = next(
-            (token for token in BT if token.value == keyword), None)
-        return keywordtoken or builtintoken or None
+    def get_keyword_token(self, identifier):
+        """Check if identifier is a custom keyword or builtin"""
+        # Check if it's a custom keyword
+        keyword_type = self.config.get_keyword_type(identifier)
+        if keyword_type:
+            return keyword_type
+        
+        # Check if it's a custom builtin function
+        builtin_type = self.config.get_builtin_type(identifier)
+        if builtin_type:
+            return builtin_type
+        
+        return None
 
     def read_identifier(self):
         identifier = ""
@@ -47,8 +60,11 @@ class Lexer:
         while self.current_char is not None and (self.current_char.isalnum() or self.current_char == '_'):
             identifier += self.current_char
             self.advance()
-        if keyword := self.get_keyword_token(identifier):
-            return Token(keyword, identifier, pos_start, self.pos)
+        
+        # Check if this identifier is a configured keyword/builtin
+        token_type = self.get_keyword_token(identifier)
+        if token_type:
+            return Token(token_type, identifier, pos_start, self.pos)
         else:
             return Token(TT.IDENT, identifier, pos_start, self.pos)
 
@@ -79,16 +95,16 @@ class Lexer:
             't': '\t'
         }
 
-        while self.current_char is not None and self.current_char != '"' or escape_character:
+        while self.current_char is not None and (self.current_char != '"' or escape_character):
             if escape_character:
-                string += escape_characters.get(self.current_char,
-                                                self.current_char)
+                string += escape_characters.get(self.current_char, self.current_char)
+                escape_character = False
             else:
                 if self.current_char == '\\':
                     escape_character = True
-                string += self.current_char
+                else:
+                    string += self.current_char
             self.advance()
-            escape_character = False
 
         if self.current_char != '"':
             return IllegalCharError(
@@ -98,40 +114,40 @@ class Lexer:
         return Token(TT.STRING, string, pos_start, self.pos)
 
     def read_not_equals(self):
-        self.advance()
         pos_start = self.pos.copy()
+        self.advance()
         if self.current_char == '=':
             self.advance()
             return Token(TT.NE, '!=', pos_start, self.pos)
         return IllegalCharError(pos_start, self.pos.copy(), "Expected '=' after '!'")
 
     def read_equals(self):
-        self.advance()
         pos_start = self.pos.copy()
+        self.advance()
         if self.current_char == '=':
             self.advance()
             return Token(TT.EE, '==', pos_start, self.pos)
         return Token(TT.EQUALS, '=', pos_start, self.pos)
 
     def read_less_than(self):
-        self.advance()
         pos_start = self.pos.copy()
+        self.advance()
         if self.current_char == '=':
             self.advance()
             return Token(TT.LTE, '<=', pos_start, self.pos)
         return Token(TT.LT, '<', pos_start, self.pos)
 
     def read_greater_than(self):
-        self.advance()
         pos_start = self.pos.copy()
+        self.advance()
         if self.current_char == '=':
             self.advance()
             return Token(TT.GTE, '>=', pos_start, self.pos)
         return Token(TT.GT, '>', pos_start, self.pos)
 
-    def read_arrow_or_less_than(self):
-        self.advance()
+    def read_arrow_or_minus(self):
         pos_start = self.pos.copy()
+        self.advance()
         if self.current_char == '>':
             self.advance()
             return Token(TT.ARROW, '->', pos_start, self.pos)
@@ -144,7 +160,7 @@ class Lexer:
             if self.current_char.isspace():
                 self.advance()
                 continue
-            elif self.current_char.isalpha():
+            elif self.current_char.isalpha() or self.current_char == '_':
                 tokens.append(self.read_identifier())
             elif self.current_char.isdigit():
                 tokens.append(self.read_number())
@@ -174,10 +190,10 @@ class Lexer:
                     return [], read_greater_than
                 tokens.append(read_greater_than)
             elif self.current_char == '-':
-                read_arrow_or_less_than = self.read_arrow_or_less_than()
-                if isinstance(read_arrow_or_less_than, IllegalCharError):
-                    return [], read_arrow_or_less_than
-                tokens.append(read_arrow_or_less_than)
+                read_arrow_or_minus = self.read_arrow_or_minus()
+                if isinstance(read_arrow_or_minus, IllegalCharError):
+                    return [], read_arrow_or_minus
+                tokens.append(read_arrow_or_minus)
             elif self.current_char in TT._value2member_map_:
                 pos_start = self.pos.copy()
                 tokens.append(

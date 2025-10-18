@@ -1,10 +1,34 @@
+# main.py
 import sys
 from run import run_file, run, compile_file, compile_to_llvm, build_executable
+from src.config import LanguageConfig
 
 
 def main():
+    # Parse arguments for --config flag
+    config = None
+    args = sys.argv[1:]
+    
+    # Check for --config flag
+    if '--config' in args:
+        config_index = args.index('--config')
+        if config_index + 1 < len(args):
+            config_path = args[config_index + 1]
+            try:
+                config = LanguageConfig(config_path)
+                print(f"Loaded configuration from: {config_path}")
+            except Exception as e:
+                print(f"Error loading config: {e}")
+                sys.exit(1)
+            # Remove --config and its argument from args
+            args.pop(config_index)  # Remove --config
+            args.pop(config_index)  # Remove config_path
+        else:
+            print("Error: --config requires a file path")
+            sys.exit(1)
+    
     # No arguments - run the shell
-    if len(sys.argv) == 1:
+    if len(args) == 0:
         print("FunLang Shell - Type 'exit' to quit")
         print("Commands: 'compile <code>' to compile, 'run <code>' to interpret")
         while True:
@@ -14,7 +38,7 @@ def main():
 
             if source.startswith('compile '):
                 code = source[8:]
-                llvm_ir, ast, tokens, error = compile_to_llvm('<stdin>', code)
+                llvm_ir, ast, tokens, error = compile_to_llvm('<stdin>', code, config)
 
                 if error:
                     if isinstance(error, str):
@@ -26,14 +50,14 @@ def main():
                     print(llvm_ir)
             elif source.startswith('run '):
                 code = source[4:]
-                result, ast, tokens, error = run('<stdin>', code)
+                result, ast, tokens, error = run('<stdin>', code, config)
 
                 if error:
                     print(error.as_string())
                 else:
                     print("Result:", result)
             else:
-                result, ast, tokens, error = run('<stdin>', source)
+                result, ast, tokens, error = run('<stdin>', source, config)
 
                 if error:
                     print(error.as_string())
@@ -41,7 +65,7 @@ def main():
                     print("Result:", result)
 
     # Run interactive shell development mode
-    elif len(sys.argv) == 2 and sys.argv[1] == '--dev':
+    elif len(args) == 1 and args[0] == '--dev':
         print("FunLang Development Shell - Type 'exit' to quit")
         print("Commands: 'compile <code>' to compile, 'run <code>' to interpret")
         while True:
@@ -51,7 +75,7 @@ def main():
 
             if source.startswith('compile '):
                 code = source[8:]
-                llvm_ir, ast, tokens, error = compile_to_llvm('<stdin>', code)
+                llvm_ir, ast, tokens, error = compile_to_llvm('<stdin>', code, config)
 
                 if error:
                     if isinstance(error, str):
@@ -64,7 +88,7 @@ def main():
                 print("LLVM IR:", llvm_ir)
             elif source.startswith('run '):
                 code = source[4:]
-                result, ast, tokens, error = run('<stdin>', code)
+                result, ast, tokens, error = run('<stdin>', code, config)
 
                 if error:
                     print(error.as_string())
@@ -73,7 +97,7 @@ def main():
                 print("AST:", ast)
                 print("Result:", result)
             else:
-                result, ast, tokens, error = run('<stdin>', source)
+                result, ast, tokens, error = run('<stdin>', source, config)
 
                 if error:
                     print(error.as_string())
@@ -82,10 +106,10 @@ def main():
                 print("AST:", ast)
                 print("Result:", result)
 
-    # Run or compile a file
-    elif len(sys.argv) == 2:
-        file_path = sys.argv[1]
-        result, ast, tokens, error = run_file(file_path)
+    # Run a file
+    elif len(args) == 1:
+        file_path = args[0]
+        result, ast, tokens, error = run_file(file_path, config)
 
         if error:
             if isinstance(error, str):
@@ -98,9 +122,9 @@ def main():
             print(result)
 
     # Compile a file with --compile flag
-    elif len(sys.argv) == 3 and sys.argv[1] == '--compile':
-        file_path = sys.argv[2]
-        llvm_ir, ast, tokens, error = compile_file(file_path)
+    elif len(args) == 2 and args[0] == '--compile':
+        file_path = args[1]
+        llvm_ir, ast, tokens, error = compile_file(file_path, config)
 
         if error:
             if isinstance(error, str):
@@ -116,9 +140,9 @@ def main():
             print(f"LLVM IR written to {output_file}")
 
     # Build executable with --build flag
-    elif len(sys.argv) == 3 and sys.argv[1] == '--build':
-        file_path = sys.argv[2]
-        executable, error = build_executable(file_path)
+    elif len(args) == 2 and args[0] == '--build':
+        file_path = args[1]
+        executable, error = build_executable(file_path, config)
 
         if error:
             print(f"Build Error: {error}")
@@ -130,10 +154,10 @@ def main():
     # Invalid usage
     else:
         print("Usage:")
-        print("  python main.py                    # Interactive shell")
-        print("  python main.py <file.fl>          # Run file")
-        print("  python main.py --compile <file.fl> # Compile to LLVM IR")
-        print("  python main.py --build <file.fl>   # Build executable")
+        print("  python main.py [--config <config.json>]                    # Interactive shell")
+        print("  python main.py [--config <config.json>] <file.fl>          # Run file")
+        print("  python main.py [--config <config.json>] --compile <file.fl> # Compile to LLVM IR")
+        print("  python main.py [--config <config.json>] --build <file.fl>   # Build executable")
         sys.exit(1)
 
 

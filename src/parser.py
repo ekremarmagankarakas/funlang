@@ -25,10 +25,11 @@ class ParseResult:
 
 
 class Parser:
-    def __init__(self, tokens):
+    def __init__(self, tokens, config=None):
         self.tokens = tokens
         self.pos = -1
         self.current_token = None
+        self.config = config
         self.advance()
 
     def advance(self):

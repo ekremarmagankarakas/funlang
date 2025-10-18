@@ -1,55 +1,78 @@
+# run.py
 import os
 from src.token import BuiltInFunctionType as BT
 from src.lexer import Lexer
 from src.parser import Parser
 from src.interpreter import Interpreter, Context, SymbolTable, Number, BuiltInFunction
 from src.codegen import CodeGenerator
-
-global_symbol_table = SymbolTable()
-global_symbol_table.set(BT.PRINT.value, BuiltInFunction("print"))
-global_symbol_table.set(BT.CLEAR.value, BuiltInFunction("clear"))
-global_symbol_table.set(BT.IS_STRING.value, BuiltInFunction("is_string"))
-global_symbol_table.set(BT.IS_NUMBER.value, BuiltInFunction("is_number"))
-global_symbol_table.set(BT.IS_FUN.value, BuiltInFunction("is_fun"))
-global_symbol_table.set(BT.IS_LIST.value, BuiltInFunction("is_list"))
-global_symbol_table.set(BT.LEN.value, BuiltInFunction("len"))
-global_symbol_table.set(BT.TO_STRING.value, BuiltInFunction("to_string"))
-global_symbol_table.set(BT.TO_INT.value, BuiltInFunction("to_int"))
-global_symbol_table.set(BT.TO_FLOAT.value, BuiltInFunction("to_float"))
-global_symbol_table.set(BT.TO_LIST.value, BuiltInFunction("to_list"))
-global_symbol_table.set(BT.TYPEOF.value, BuiltInFunction("typeof"))
-global_symbol_table.set(BT.ELOS.value, BuiltInFunction("elos"))
-global_symbol_table.set("null", Number(0))
-global_symbol_table.set("false", Number(0))
-global_symbol_table.set("true", Number(1))
+from src.config import LanguageConfig
 
 
-def run(file_name, source):
-    lexer = Lexer(file_name, source)
+def create_global_symbol_table(config):
+    """Create a global symbol table with builtin functions using custom names from config"""
+    symbol_table = SymbolTable()
+    
+    # Get custom builtin names from config
+    builtin_names = config.config['builtins']
+    
+    # Register builtin functions with their custom names
+    symbol_table.set(builtin_names['print'], BuiltInFunction("print"))
+    symbol_table.set(builtin_names['clear'], BuiltInFunction("clear"))
+    symbol_table.set(builtin_names['is_string'], BuiltInFunction("is_string"))
+    symbol_table.set(builtin_names['is_number'], BuiltInFunction("is_number"))
+    symbol_table.set(builtin_names['is_fun'], BuiltInFunction("is_fun"))
+    symbol_table.set(builtin_names['is_list'], BuiltInFunction("is_list"))
+    symbol_table.set(builtin_names['len'], BuiltInFunction("len"))
+    symbol_table.set(builtin_names['to_string'], BuiltInFunction("to_string"))
+    symbol_table.set(builtin_names['to_int'], BuiltInFunction("to_int"))
+    symbol_table.set(builtin_names['to_float'], BuiltInFunction("to_float"))
+    symbol_table.set(builtin_names['to_list'], BuiltInFunction("to_list"))
+    symbol_table.set(builtin_names['typeof'], BuiltInFunction("typeof"))
+    symbol_table.set(builtin_names['elos'], BuiltInFunction("elos"))
+    
+    # Register constants
+    symbol_table.set("null", Number(0))
+    symbol_table.set("false", Number(0))
+    symbol_table.set("true", Number(1))
+    
+    return symbol_table
+
+
+def run(file_name, source, config=None):
+    """Run FunLang code with optional custom configuration"""
+    if config is None:
+        config = LanguageConfig()
+    
+    lexer = Lexer(file_name, source, config)
     tokens, error = lexer.tokenizer()
     if error:
         return None, None, None, error
 
-    parser = Parser(tokens)
+    parser = Parser(tokens, config)
     ast = parser.parse()
     if ast.error:
         return None, None, tokens, ast.error
 
     interpreter = Interpreter()
     context = Context("<program>")
-    context.symbol_table = global_symbol_table
+    # Create symbol table with custom builtin names
+    context.symbol_table = create_global_symbol_table(config)
     result = interpreter.visit(ast.node, context)
 
     return result.value, ast.node, tokens, result.error
 
 
-def compile_to_llvm(file_name, source):
-    lexer = Lexer(file_name, source)
+def compile_to_llvm(file_name, source, config=None):
+    """Compile FunLang code to LLVM IR with optional custom configuration"""
+    if config is None:
+        config = LanguageConfig()
+    
+    lexer = Lexer(file_name, source, config)
     tokens, error = lexer.tokenizer()
     if error:
         return None, None, None, error
 
-    parser = Parser(tokens)
+    parser = Parser(tokens, config)
     ast = parser.parse()
     if ast.error:
         return None, None, tokens, ast.error
@@ -62,30 +85,32 @@ def compile_to_llvm(file_name, source):
         return None, ast.node, tokens, f"Code generation error: {str(e)}"
 
 
-def compile_file(file_path):
+def compile_file(file_path, config=None):
+    """Compile a FunLang file with optional custom configuration"""
     if not file_path.endswith('.fl'):
-        return None, None, None,
+        return None, None, None, "File must have a .fl extension"
 
     try:
         with open(file_path, 'r') as file:
             source = file.read()
 
         file_name = os.path.basename(file_path)
-        return compile_to_llvm(file_name, source)
+        return compile_to_llvm(file_name, source, config)
     except FileNotFoundError:
         return None, None, None, f"File '{file_path}' not found"
     except Exception as e:
         return None, None, None, f"Error reading file: {str(e)}"
 
 
-def build_executable(file_path):
+def build_executable(file_path, config=None):
+    """Build an executable from a FunLang file with optional custom configuration"""
     import subprocess
 
     if not file_path.endswith('.fl'):
-        return None,
+        return None, "File must have a .fl extension"
 
     try:
-        llvm_ir, ast, tokens, error = compile_file(file_path)
+        llvm_ir, ast, tokens, error = compile_file(file_path, config)
         if error:
             return None, error
 
@@ -118,7 +143,8 @@ def build_executable(file_path):
         return None, f"Build error: {str(e)}"
 
 
-def run_file(file_path):
+def run_file(file_path, config=None):
+    """Run a FunLang file with optional custom configuration"""
     if not file_path.endswith('.fl'):
         return None, None, None, "File must have a .fl extension"
 
@@ -127,7 +153,7 @@ def run_file(file_path):
             source = file.read()
 
         file_name = os.path.basename(file_path)
-        return run(file_name, source)
+        return run(file_name, source, config)
     except FileNotFoundError:
         return None, None, None, f"File '{file_path}' not found"
     except Exception as e:
