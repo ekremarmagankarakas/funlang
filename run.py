@@ -1,4 +1,3 @@
-# run.py
 import os
 from src.token import BuiltInFunctionType as BT
 from src.lexer import Lexer

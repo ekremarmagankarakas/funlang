@@ -1,4 +1,3 @@
-# src/lexer.py
 from src.error import IllegalCharError
 from src.token import Token, TokenType as TT, KeywordType as TK, BuiltInFunctionType as BT
 from src.config import LanguageConfig

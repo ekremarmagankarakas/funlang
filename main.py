@@ -1,4 +1,3 @@
-# main.py
 import sys
 from run import run_file, run, compile_file, compile_to_llvm, build_executable
 from src.config import LanguageConfig
