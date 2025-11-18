@@ -1,0 +1,32 @@
+funcion saludar(nombre) {
+    devolver "Hola, " + nombre;
+};
+
+imprimir(saludar("FunLang"));
+
+variable entero x = 5;
+variable flotante pi = 3.14;
+variable cadena mensaje = "Bienvenido a FunLang";
+variable lista numeros = [1, 2, 3, 4, 5];
+
+imprimir(mensaje);
+imprimir("Longitud de la lista: " + to_string(longitud(numeros)));
+imprimir("Tipo de x: " + tipo_de(x));
+
+si x > 3 {
+    imprimir("x es mayor que 3");
+} sino_si x == 3 {
+    imprimir("x es igual a 3");
+} sino {
+    imprimir("x es menor que 3");
+}
+
+para i = 0, 5 {
+    imprimir("Iteración: " + to_string(i));
+}
+
+variable entero contador = 0;
+mientras contador < 3 {
+    imprimir("Contador: " + to_string(contador));
+    contador = contador + 1;
+}

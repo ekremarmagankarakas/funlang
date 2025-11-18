@@ -1,0 +1,32 @@
+fonksiyon selamla(isim) {
+    dondur "Merhaba, " + isim;
+};
+
+yazdir(selamla("FunLang"));
+
+degisken tamsayi x = 5;
+degisken ondalik pi = 3.14;
+degisken metin mesaj = "FunLang'a Hoş Geldiniz";
+degisken liste sayilar = [1, 2, 3, 4, 5];
+
+yazdir(mesaj);
+yazdir("Liste uzunluğu: " + metine_cevir(uzunluk(sayilar)));
+yazdir("x'in türü: " + turu(x));
+
+eger x > 3 {
+    yazdir("x 3'ten büyük");
+} yoksa_eger x == 3 {
+    yazdir("x 3'e eşit");
+} yoksa {
+    yazdir("x 3'ten küçük");
+}
+
+dongu i = 0, 5 {
+    yazdir("İterasyon: " + metine_cevir(i));
+}
+
+degisken tamsayi sayac = 0;
+surec sayac < 3 {
+    yazdir("Sayaç: " + metine_cevir(sayac));
+    sayac = sayac + 1;
+}
