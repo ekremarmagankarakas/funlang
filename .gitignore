@@ -3,3 +3,4 @@ env
 venv/
 issues.txt
 **temp**
+funlang.egg-info

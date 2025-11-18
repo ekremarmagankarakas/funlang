@@ -151,11 +151,33 @@ var chars = to_list("hello");  // Creates a list of characters
 - `to_list(value)`: Convert value to list
 - `typeof(value)`: Get the type of value
 
+## Installation
+
+Run the installation script:
+
+```bash
+./install_pip.sh
+```
+
+This sets up FunLang for both development and regular use by:
+- Creating a venv with dependencies
+- Installing in editable mode (changes take effect immediately)
+- Adding to your PATH (use `funlang` anywhere)
+
+Then reload your shell:
+```bash
+source ~/.zshrc  # or ~/.bashrc
+```
+
+See [INSTALLATION.md](INSTALLATION.md) for detailed instructions.
+
 ## Running FunLang Programs
 
+Once installed, use the `funlang` command:
+
 ### Interactive Mode
-```
-python3 main.py
+```bash
+funlang
 ```
 
 In interactive mode, you can use special commands:
@@ -163,29 +185,54 @@ In interactive mode, you can use special commands:
 - `compile <code>` - Compile code to LLVM IR
 
 ### Running a Script
+```bash
+funlang script.fl
 ```
-python3 main.py script.fl
+
+### Using Language Configs
+```bash
+funlang --config turkish examples/turkish_example.fl
+funlang --config spanish examples/spanish_example.fl
+funlang --config emoji examples/example.fl
 ```
 
 ### Compilation Options
 
 #### Compile to LLVM IR
-```
-python3 main.py --compile script.fl
+```bash
+funlang --compile script.fl
 ```
 This generates a `.ll` file with LLVM intermediate representation.
 
 #### Build Native Executable
-```
-python3 main.py --build script.fl
+```bash
+funlang --build script.fl
 ```
 This compiles the FunLang code to a native executable.
+
+### Alternative: Run Directly (Development)
+
+If you haven't installed the package, you can run directly:
+```bash
+python3 main.py                    # Interactive mode
+python3 main.py script.fl          # Run a script
+python3 main.py --config turkish script.fl
+```
 
 ## Examples
 
 Check the `examples/` directory for sample programs:
 - `example.fl`: Basic language features
 - `example2.fl`: Binary search with type casting
+- `example3.fl`: Simple arithmetic
+- `turkish_example.fl`: Full example using Turkish keywords
+- `spanish_example.fl`: Full example using Spanish keywords
+
+Try them with different language configs:
+```bash
+funlang --config turkish examples/turkish_example.fl
+funlang --config spanish examples/spanish_example.fl
+```
 
 ## Implementation
 

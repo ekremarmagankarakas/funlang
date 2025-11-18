@@ -1,18 +1,40 @@
 import sys
+import os
 from run import run_file, run, compile_file, compile_to_llvm, build_executable
 from src.config import LanguageConfig
+
+
+def resolve_config_path(config_arg):
+    """Resolve config path - support shortcuts and relative paths"""
+    # If it's an absolute path, use it as-is
+    if os.path.isabs(config_arg):
+        return config_arg
+
+    # Support shorthand: "turkish" -> "configs/turkish.json"
+    if not config_arg.endswith('.json'):
+        config_arg = f"configs/{config_arg}.json"
+
+    # If it starts with "configs/", look in package directory
+    if config_arg.startswith('configs/'):
+        # Find it relative to this script (works for both pip install and direct run)
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        return os.path.join(script_dir, config_arg)
+
+    # Otherwise treat as relative to current directory
+    return config_arg
 
 
 def main():
     # Parse arguments for --config flag
     config = None
     args = sys.argv[1:]
-    
+
     # Check for --config flag
     if '--config' in args:
         config_index = args.index('--config')
         if config_index + 1 < len(args):
-            config_path = args[config_index + 1]
+            config_arg = args[config_index + 1]
+            config_path = resolve_config_path(config_arg)
             try:
                 config = LanguageConfig(config_path)
                 print(f"Loaded configuration from: {config_path}")
