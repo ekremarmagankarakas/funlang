@@ -1,0 +1,26 @@
+{
+  "keywords": {
+    "if": "si",
+    "elif": "sino_si",
+    "else": "sino",
+    "for": "para",
+    "while": "mientras",
+    "fun": "funcion",
+    "var": "variable",
+    "return": "devolver",
+    "break": "romper",
+    "continue": "continuar",
+    "and": "y",
+    "or": "o",
+    "not": "no",
+    "int": "entero",
+    "float": "flotante",
+    "string": "cadena",
+    "list": "lista"
+  },
+  "builtins": {
+    "print": "imprimir",
+    "len": "longitud",
+    "typeof": "tipo_de"
+  }
+}

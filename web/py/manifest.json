@@ -1,0 +1,16 @@
+{
+  "files": [
+    "funlang_runner.py",
+    "src/__init__.py",
+    "src/ast_nodes.py",
+    "src/config.py",
+    "src/error.py",
+    "src/interpreter.py",
+    "src/lexer.py",
+    "src/parser.py",
+    "src/token.py",
+    "configs/turkish.json",
+    "configs/spanish.json",
+    "configs/emoji.json"
+  ]
+}

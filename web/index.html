@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FunLang Playground</title>
+    <meta name="description" content="Run FunLang code in your browser (interpreter mode)." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true"></div>
+
+    <main class="shell">
+      <header class="top">
+        <div>
+          <div class="kicker">FunLang</div>
+          <h1 class="title">Browser Playground</h1>
+          <p class="sub">Runs entirely client-side via Pyodide (Python/WASM). LLVM compilation is intentionally disabled here.</p>
+        </div>
+        <div class="status" id="status">
+          <div class="dot" aria-hidden="true"></div>
+          <div class="statusText">Loading runtime…</div>
+        </div>
+      </header>
+
+      <section class="panel">
+        <div class="bar">
+          <div class="left">
+            <label class="label" for="config">Language config</label>
+            <select id="config" class="select" disabled>
+              <option value="default">Default</option>
+              <option value="turkish">Turkish</option>
+              <option value="spanish">Spanish</option>
+              <option value="emoji">Emoji</option>
+            </select>
+            <button id="loadExample" class="btn secondary" disabled>Load example</button>
+          </div>
+          <div class="right">
+            <button id="run" class="btn primary" disabled>Run</button>
+            <button id="format" class="btn secondary" disabled>Trim</button>
+            <button id="clearOut" class="btn ghost" disabled>Clear output</button>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="card">
+            <div class="cardTitle">Editor</div>
+            <textarea id="code" class="editor" spellcheck="false"></textarea>
+            <div class="hint">
+              Tip: Use <span class="mono">print(...)</span> (or your config’s builtin) to write to output.
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="cardTitle">Output</div>
+            <pre id="output" class="output"></pre>
+          </div>
+        </div>
+      </section>
+
+      <footer class="foot">
+        <a class="link" href="../README.md" target="_blank" rel="noreferrer">Repo README</a>
+        <span class="sep">·</span>
+        <span class="muted">Local dev: <span class="mono">python3 -m http.server</span> (run from repo root) then open <span class="mono">/web/</span></span>
+      </footer>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
